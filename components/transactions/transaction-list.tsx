@@ -9,12 +9,14 @@ interface TransactionListProps {
   dailySummaries: DailySummary[];
   onTransactionClick?: (id: string) => void;
   className?: string;
+  newTransactionIds?: string[];
 }
 
 export function TransactionList({
   dailySummaries,
   onTransactionClick,
   className,
+  newTransactionIds = [],
 }: TransactionListProps) {
   if (dailySummaries.length === 0) {
     return (
@@ -33,6 +35,7 @@ export function TransactionList({
           key={summary.date.toISOString()}
           summary={summary}
           onTransactionClick={onTransactionClick}
+          newTransactionIds={newTransactionIds}
         />
       ))}
     </div>

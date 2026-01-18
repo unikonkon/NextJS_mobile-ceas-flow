@@ -341,3 +341,104 @@
 .stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
 .stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
 .stagger-children > *:nth-child(10) { animation-delay: 0.5s; }
+
+/* New Item Pop-in Animation */
+@keyframes pop-in-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-12px);
+  }
+  50% {
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 oklch(0.65 0.20 155 / 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px oklch(0.65 0.20 155 / 0.3);
+  }
+}
+
+.animate-pop-in-glow {
+  animation: pop-in-glow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(1 0 0 / 0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out;
+}
+
+.animate-glow-income {
+  animation: glow-pulse 1s ease-in-out;
+  --tw-shadow-color: var(--income);
+}
+
+.animate-glow-expense {
+  animation: glow-pulse 1s ease-in-out;
+  --tw-shadow-color: var(--expense);
+}
+
+/* Transaction card new item highlight */
+.transaction-new {
+  position: relative;
+  overflow: hidden;
+}
+
+.transaction-new::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.65 0.20 155 / 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-out;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Success ring animation */
+@keyframes success-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-success-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid var(--income);
+  animation: success-ring 0.6s ease-out forwards;
+}

@@ -9,12 +9,14 @@ interface TransactionCardProps {
   transaction: TransactionWithCategory;
   onClick?: () => void;
   className?: string;
+  isNew?: boolean;
 }
 
 export function TransactionCard({
   transaction,
   onClick,
   className,
+  isNew = false,
 }: TransactionCardProps) {
   const isExpense = transaction.type === 'expense';
   const isIncome = transaction.type === 'income';
@@ -32,6 +34,7 @@ export function TransactionCard({
       className={cn(
         'group flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all duration-200',
         'hover:bg-accent/50 active:scale-[0.98]',
+        isNew && 'animate-pop-in-glow transaction-new bg-accent/30',
         className
       )}
     >

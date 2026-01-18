@@ -9,12 +9,14 @@ interface DayGroupProps {
   summary: DailySummary;
   onTransactionClick?: (id: string) => void;
   className?: string;
+  newTransactionIds?: string[];
 }
 
 export function DayGroup({
   summary,
   onTransactionClick,
   className,
+  newTransactionIds = [],
 }: DayGroupProps) {
   const dailyBalance = summary.income - summary.expense;
   const hasIncome = summary.income > 0;
@@ -58,6 +60,7 @@ export function DayGroup({
             key={transaction.id}
             transaction={transaction}
             onClick={() => onTransactionClick?.(transaction.id)}
+            isNew={newTransactionIds.includes(transaction.id)}
           />
         ))}
       </div>
