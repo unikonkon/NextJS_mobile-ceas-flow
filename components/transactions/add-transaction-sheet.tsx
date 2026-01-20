@@ -5,8 +5,10 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Category, TransactionType } from '@/types';
+import { Category, TransactionType, CategoryType } from '@/types';
 import { formatNumber } from '@/lib/utils/format';
+import { AddCategoryModal } from '@/components/categories';
+import { useCategoryStore } from '@/lib/stores';
 import {
   Calendar,
   Wallet,
@@ -40,6 +42,10 @@ export function AddTransactionSheet({
   const [transactionType, setTransactionType] = useState<TransactionType>('expense');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [note, setNote] = useState('');
+  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
+
+  // Category store for adding new categories
+  const addCategory = useCategoryStore((s) => s.addCategory);
 
   // Calculator state
   const [displayValue, setDisplayValue] = useState('0');
@@ -151,6 +157,12 @@ export function AddTransactionSheet({
 
   const handleCategorySelect = (category: Category) => {
     setSelectedCategory(category);
+  };
+
+  const handleAddCategory = async (name: string, type: CategoryType) => {
+    const newCategory = await addCategory({ name, type });
+    // Auto-select the newly created category
+    setSelectedCategory(newCategory);
   };
 
   const handleSubmit = () => {
@@ -314,7 +326,10 @@ export function AddTransactionSheet({
               })}
 
               {/* Add New Category */}
-              <button className="group flex shrink-0 flex-col items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all hover:bg-accent/50 active:scale-95">
+              <button
+                onClick={() => setAddCategoryOpen(true)}
+                className="group flex shrink-0 flex-col items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all hover:bg-accent/50 active:scale-95"
+              >
                 <div className="flex size-11 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 transition-colors group-hover:border-primary/50">
                   <span className="text-lg text-muted-foreground group-hover:text-primary">+</span>
                 </div>
@@ -493,6 +508,14 @@ export function AddTransactionSheet({
             </div>
           </div>
         </div>
+
+        {/* Add Category Modal */}
+        <AddCategoryModal
+          open={addCategoryOpen}
+          onOpenChange={setAddCategoryOpen}
+          categoryType={transactionType === 'income' ? 'income' : 'expense'}
+          onAdd={handleAddCategory}
+        />
       </SheetContent>
     </Sheet>
   );

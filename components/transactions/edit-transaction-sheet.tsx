@@ -9,13 +9,14 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Category, TransactionType, TransactionWithCategory } from '@/types';
+import { Category, TransactionType, TransactionWithCategory, CategoryType } from '@/types';
 import { formatNumber, formatRelativeDate } from '@/lib/utils/format';
+import { AddCategoryModal } from '@/components/categories';
+import { useCategoryStore } from '@/lib/stores';
 import {
   Calendar,
   FileText,
   Trash2,
-  X,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -55,6 +56,10 @@ export function EditTransactionSheet({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
+
+  // Category store for adding new categories
+  const addCategory = useCategoryStore((s) => s.addCategory);
 
   // Calculator state
   const [displayValue, setDisplayValue] = useState('0');
@@ -183,6 +188,12 @@ export function EditTransactionSheet({
     }
   };
 
+  const handleAddCategory = async (name: string, type: CategoryType) => {
+    const newCategory = await addCategory({ name, type });
+    // Auto-select the newly created category
+    setSelectedCategory(newCategory);
+  };
+
   const handleSave = () => {
     if (!transaction || !selectedCategory || parseFloat(displayValue) <= 0) return;
 
@@ -218,7 +229,7 @@ export function EditTransactionSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[77vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
+        className="h-[75vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
       >
         <SheetTitle className="sr-only">แก้ไขรายการ</SheetTitle>
 
@@ -391,6 +402,19 @@ export function EditTransactionSheet({
                   </button>
                 );
               })}
+
+              {/* Add New Category */}
+              <button
+                onClick={() => setAddCategoryOpen(true)}
+                className="group flex shrink-0 flex-col items-center gap-1.5 rounded-xl px-3 py-1 transition-all hover:bg-accent/50 active:scale-95"
+              >
+                <div className="flex size-10 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 transition-colors group-hover:border-primary/50">
+                  <span className="text-base text-muted-foreground group-hover:text-primary">+</span>
+                </div>
+                <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                  เพิ่มใหม่
+                </span>
+              </button>
             </div>
           </div>
 
@@ -559,6 +583,14 @@ export function EditTransactionSheet({
             </div>
           </div>
         </div>
+
+        {/* Add Category Modal */}
+        <AddCategoryModal
+          open={addCategoryOpen}
+          onOpenChange={setAddCategoryOpen}
+          categoryType={transactionType === 'income' ? 'income' : 'expense'}
+          onAdd={handleAddCategory}
+        />
       </SheetContent>
     </Sheet>
   );

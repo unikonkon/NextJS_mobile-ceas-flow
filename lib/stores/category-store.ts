@@ -9,6 +9,11 @@ import {
 // ============================================
 // Store Interface
 // ============================================
+interface CategoryInput {
+  name: string;
+  type: 'expense' | 'income';
+}
+
 interface CategoryStore {
   // Data
   expenseCategories: Category[];
@@ -18,6 +23,7 @@ interface CategoryStore {
 
   // Actions
   loadCategories: () => Promise<void>;
+  addCategory: (input: CategoryInput) => Promise<Category>;
   getCategoryById: (id: string) => Category | undefined;
   getAllCategories: () => Category[];
 }
@@ -84,6 +90,34 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
         isInitialized: true,
       });
     }
+  },
+
+  addCategory: async (input) => {
+    const newCategory: Category = {
+      id: `cat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      name: input.name,
+      type: input.type,
+    };
+
+    // Update Zustand state immediately
+    if (input.type === 'expense') {
+      set((state) => ({
+        expenseCategories: [...state.expenseCategories, newCategory],
+      }));
+    } else {
+      set((state) => ({
+        incomeCategories: [...state.incomeCategories, newCategory],
+      }));
+    }
+
+    // Persist to IndexedDB
+    try {
+      await db.categories.put(toStoredCategory(newCategory));
+    } catch (error) {
+      console.error('Failed to persist category:', error);
+    }
+
+    return newCategory;
   },
 
   getCategoryById: (id: string) => {
