@@ -13,6 +13,10 @@ import {
   Sparkles,
   Tag,
   Move,
+  Trash2,
+  AlertTriangle,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react';
 import type { Category, TransactionType, CategoryType } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -26,6 +30,7 @@ interface CategoryScrollProps {
   onAddNew: () => void;
   onReorderCategories?: (categories: Category[]) => void;
   onAddCategory?: (name: string, type: CategoryType) => void;
+  onDeleteCategory?: (id: string) => void;
   label?: string;
 }
 
@@ -41,6 +46,7 @@ export function CategoryScroll({
   onAddNew,
   onReorderCategories,
   onAddCategory,
+  onDeleteCategory,
   label = 'เลือกหมวดหมู่',
 }: CategoryScrollProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,6 +75,10 @@ export function CategoryScroll({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  // Delete mode state
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+
   // Load visible count from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(`${VISIBLE_COUNT_KEY}-${transactionType}`);
@@ -93,6 +103,8 @@ export function CategoryScroll({
       setHasChanges(false);
       setShowAddForm(false);
       setNewCategoryName('');
+      setIsDeleteMode(false);
+      setCategoryToDelete(null);
     }
   }, [showSettings, orderedCategories, visibleCount]);
 
@@ -324,6 +336,35 @@ export function CategoryScroll({
     }
     setShowSettings(false);
   }, [localCategories, localVisibleCount, transactionType, onReorderCategories]);
+
+  // Delete handlers
+  const handleDeleteClick = useCallback((category: Category, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCategoryToDelete(category);
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(30);
+    }
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (categoryToDelete && onDeleteCategory) {
+      // Remove from local state immediately
+      setLocalCategories((prev) => prev.filter((c) => c.id !== categoryToDelete.id));
+      // Delete from database
+      onDeleteCategory(categoryToDelete.id);
+      setHasChanges(true);
+      setCategoryToDelete(null);
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 30, 50]);
+      }
+    }
+  }, [categoryToDelete, onDeleteCategory]);
+
+  const handleCancelDelete = useCallback(() => {
+    setCategoryToDelete(null);
+  }, []);
 
   // Get visible categories for display
   const displayCategories = orderedCategories.slice(0, visibleCount);
@@ -583,17 +624,48 @@ export function CategoryScroll({
               </div>
             </div>
 
-            {/* Divider with drag instruction */}
-            <div className="px-5 pb-2">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-border" />
+            {/* Mode Toggle - Delete / Reorder */}
+            <div className="px-5 pb-3">
+              <div className="flex items-center justify-between">
+                {/* Delete Mode Toggle */}
+                <button
+                  onClick={() => setIsDeleteMode(!isDeleteMode)}
+                  className={cn(
+                    'group flex items-center gap-2 px-3 py-2 rounded-xl',
+                    'text-xs font-medium transition-all duration-300',
+                    'border-2',
+                    isDeleteMode
+                      ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                      : 'border-border/50 bg-muted/30 text-muted-foreground hover:border-destructive/30 hover:text-destructive'
+                  )}
+                >
+                  {isDeleteMode ? (
+                    <ToggleRight className="size-4" />
+                  ) : (
+                    <ToggleLeft className="size-4" />
+                  )}
+                  <Trash2 className={cn(
+                    'size-3.5 transition-transform',
+                    isDeleteMode && 'animate-pulse'
+                  )} />
+                  <span>{isDeleteMode ? 'โหมดลบเปิดอยู่' : 'โหมดลบ'}</span>
+                </button>
+
+                {/* Instruction Text */}
                 <span className={cn(
                   "text-[10px] font-medium flex items-center gap-1 transition-colors",
-                  isTouchDragging 
-                    ? transactionType === 'expense' ? 'text-expense' : 'text-income'
-                    : 'text-muted-foreground'
+                  isDeleteMode
+                    ? 'text-destructive'
+                    : isTouchDragging
+                      ? transactionType === 'expense' ? 'text-expense' : 'text-income'
+                      : 'text-muted-foreground'
                 )}>
-                  {isTouchDragging ? (
+                  {isDeleteMode ? (
+                    <>
+                      <AlertTriangle className="size-2.5" />
+                      กดเพื่อลบ
+                    </>
+                  ) : isTouchDragging ? (
                     <>
                       <Move className="size-2.5 animate-pulse" />
                       ลากไปวางตำแหน่งใหม่
@@ -601,18 +673,17 @@ export function CategoryScroll({
                   ) : (
                     <>
                       <GripVertical className="size-2.5" />
-                      กดค้าง แล้วลากเพื่อจัดลำดับ
+                      กดค้างเพื่อลาก
                     </>
                   )}
                 </span>
-                <div className="flex-1 h-px bg-border" />
               </div>
             </div>
 
             {/* Category Grid - Horizontal Rows with Scroll-Y */}
             <div
               className={cn(
-                'flex-1 overflow-y-auto px-3 pb-2 min-h-0 max-h-[40vh] relative',
+                'flex-1 overflow-y-auto px-3 py-2 min-h-0 max-h-[40vh] relative',
                 isTouchDragging && 'overflow-hidden'
               )}
               onTouchMove={handleTouchMove}
@@ -668,20 +739,27 @@ export function CategoryScroll({
                       onTouchStart={(e) => handleTouchStart(e, index)}
                       className={cn(
                         'group relative flex flex-col items-center gap-1 p-2 rounded-xl',
-                        'w-[70px] cursor-grab active:cursor-grabbing select-none',
+                        'w-[70px] select-none',
                         'border-2 transition-all',
-                        'hover:shadow-md',
+                        // Delete mode styling
+                        isDeleteMode
+                          ? cn(
+                              'cursor-pointer hover:border-destructive/50 hover:bg-destructive/5',
+                              'hover:shadow-lg hover:shadow-destructive/10',
+                              'animate-in fade-in duration-200'
+                            )
+                          : 'cursor-grab active:cursor-grabbing hover:shadow-md',
                         // Touch dragging - disable pointer events on all items except the source
-                        isTouchDragging && draggedIndex !== null && 'touch-none pointer-events-none',
+                        !isDeleteMode && isTouchDragging && draggedIndex !== null && 'touch-none pointer-events-none',
                         // Dragging item - make it semi-transparent (ghost follows finger)
-                        isDragging && cn(
+                        !isDeleteMode && isDragging && cn(
                           'opacity-30 scale-95',
                           transactionType === 'expense'
                             ? 'border-expense/50 bg-expense/5'
                             : 'border-income/50 bg-income/5'
                         ),
                         // Drop target - highlight with animation
-                        isDragOver && cn(
+                        !isDeleteMode && isDragOver && cn(
                           'border-dashed scale-110 animate-pulse',
                           transactionType === 'expense'
                             ? 'border-expense bg-expense/20 shadow-lg shadow-expense/20'
@@ -710,19 +788,37 @@ export function CategoryScroll({
                         {index + 1}
                       </div>
 
-                      {/* Drag Handle Icon - visible on mobile */}
-                      <div className={cn(
-                        "absolute top-1 right-1 transition-all duration-200",
-                        "opacity-40 group-hover:opacity-100",
-                        isDragOver && "opacity-100 scale-110"
-                      )}>
-                        <GripVertical className={cn(
-                          "size-3",
-                          isDragOver 
-                            ? transactionType === 'expense' ? 'text-expense' : 'text-income'
-                            : 'text-muted-foreground'
-                        )} />
-                      </div>
+                      {/* Delete Button - visible in delete mode */}
+                      {isDeleteMode ? (
+                        <button
+                          onClick={(e) => handleDeleteClick(category, e)}
+                          className={cn(
+                            'absolute -top-2 -right-1 z-20',
+                            'flex size-6 items-center justify-center rounded-full',
+                            'bg-red-600 text-white shadow-lg shadow-destructive/30',
+                            'transition-all duration-200',
+                            'hover:scale-110 hover:shadow-xl hover:shadow-destructive/40',
+                            'active:scale-95',
+                            'animate-in zoom-in-50 duration-200'
+                          )}
+                        >
+                          <X className="size-3.5" strokeWidth={3} />
+                        </button>
+                      ) : (
+                        /* Drag Handle Icon - visible when not in delete mode */
+                        <div className={cn(
+                          "absolute top-1 right-1 transition-all duration-200",
+                          "opacity-40 group-hover:opacity-100",
+                          isDragOver && "opacity-100 scale-110"
+                        )}>
+                          <GripVertical className={cn(
+                            "size-3",
+                            isDragOver
+                              ? transactionType === 'expense' ? 'text-expense' : 'text-income'
+                              : 'text-muted-foreground'
+                          )} />
+                        </div>
+                      )}
 
                       {/* Category Icon */}
                       <div
@@ -859,6 +955,92 @@ export function CategoryScroll({
                 </button>
               )}
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            {categoryToDelete && (
+              <div
+                className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-200 rounded-t-[2rem] sm:rounded-[2rem]"
+                onClick={handleCancelDelete}
+              >
+                <div
+                  className="mx-6 w-full max-w-xs overflow-hidden rounded-3xl bg-card shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                
+                  <div className="p-5">
+                    {/* Icon & Title */}
+                    <div className="flex flex-col items-center text-center mb-4">
+                      <div className="relative mb-3">
+                        <div className="absolute inset-0 bg-destructive/20 rounded-full blur-xl animate-pulse" />
+                        <div className="relative flex size-16 items-center justify-center rounded-full bg-destructive/15 ring-4 ring-destructive/10">
+                          <Trash2 className="size-7 text-destructive" />
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-bold text-foreground mb-1">
+                        ลบหมวดหมู่?
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        คุณต้องการลบ
+                      </p>
+                    </div>
+
+                    {/* Category Preview */}
+                    <div className={cn(
+                      'flex items-center gap-3 p-3 rounded-2xl mb-4',
+                      'bg-destructive/5 border-2 border-destructive/20'
+                    )}>
+                      <div className={cn(
+                        'flex size-12 items-center justify-center rounded-xl text-lg font-bold',
+                        transactionType === 'expense'
+                          ? 'bg-expense/20 text-expense'
+                          : 'bg-income/20 text-income'
+                      )}>
+                        {categoryToDelete.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground truncate">
+                          {categoryToDelete.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {transactionType === 'expense' ? 'หมวดหมู่รายจ่าย' : 'หมวดหมู่รายรับ'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Warning */}
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-4">
+                      <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        การลบหมวดหมู่นี้จะไม่สามารถกู้คืนได้
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-11 rounded-xl border-2 font-semibold"
+                        onClick={handleCancelDelete}
+                      >
+                        ยกเลิก
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className={cn(
+                          'flex-1 h-11 rounded-xl font-semibold',
+                          'bg-destructive hover:bg-destructive/90',
+                          'shadow-lg shadow-destructive/30'
+                        )}
+                        onClick={handleConfirmDelete}
+                      >
+                        <Trash2 className="size-4 mr-1.5" />
+                        ลบเลย
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Footer Actions */}
             <div className="px-3 pb-5 pt-2 flex gap-2">

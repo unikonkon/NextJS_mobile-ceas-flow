@@ -24,6 +24,7 @@ interface CategoryStore {
   // Actions
   loadCategories: () => Promise<void>;
   addCategory: (input: CategoryInput) => Promise<Category>;
+  deleteCategory: (id: string) => Promise<void>;
   getCategoryById: (id: string) => Category | undefined;
   getAllCategories: () => Category[];
   reorderCategories: (type: 'expense' | 'income', categories: Category[]) => Promise<void>;
@@ -127,6 +128,33 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
     }
 
     return newCategory;
+  },
+
+  deleteCategory: async (id: string) => {
+    const { expenseCategories, incomeCategories } = get();
+
+    // Find which list contains the category
+    const isExpense = expenseCategories.some((c) => c.id === id);
+
+    // Update Zustand state immediately
+    if (isExpense) {
+      const updated = expenseCategories
+        .filter((c) => c.id !== id)
+        .map((cat, index) => ({ ...cat, order: index }));
+      set({ expenseCategories: updated });
+    } else {
+      const updated = incomeCategories
+        .filter((c) => c.id !== id)
+        .map((cat, index) => ({ ...cat, order: index }));
+      set({ incomeCategories: updated });
+    }
+
+    // Delete from IndexedDB
+    try {
+      await db.categories.delete(id);
+    } catch (error) {
+      console.error('Failed to delete category from DB:', error);
+    }
   },
 
   getCategoryById: (id: string) => {
