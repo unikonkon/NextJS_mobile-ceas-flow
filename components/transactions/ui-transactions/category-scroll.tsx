@@ -61,7 +61,6 @@ export function CategoryScroll({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isTouchDragging, setIsTouchDragging] = useState(false);
-  const [touchPosition, setTouchPosition] = useState<{ x: number; y: number } | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const initialTouchOffset = useRef<{ x: number; y: number } | null>(null);
@@ -195,9 +194,8 @@ export function CategoryScroll({
       if (element) {
         setDraggedIndex(index);
         setIsTouchDragging(true);
-        setTouchPosition({ x: touch.clientX, y: touch.clientY });
         createGhostElement(element, touch);
-        
+
         // Haptic feedback if available
         if (navigator.vibrate) {
           navigator.vibrate(50);
@@ -224,9 +222,8 @@ export function CategoryScroll({
 
       // Prevent scrolling while dragging
       e.preventDefault();
-      
-      // Update touch position and ghost
-      setTouchPosition({ x: touch.clientX, y: touch.clientY });
+
+      // Update ghost position
       updateGhostPosition(touch);
 
       const elements = categoryItemRefs.current;
@@ -236,9 +233,7 @@ export function CategoryScroll({
       for (const [idx, element] of elements.entries()) {
         if (!element || idx === draggedIndex) continue;
         const rect = element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        
+
         // Check if touch is within element bounds with some tolerance
         const tolerance = 10;
         if (
@@ -251,7 +246,7 @@ export function CategoryScroll({
           break;
         }
       }
-      
+
       setDragOverIndex(foundIndex);
     },
     [draggedIndex, updateGhostPosition]
@@ -284,7 +279,6 @@ export function CategoryScroll({
     setDraggedIndex(null);
     setDragOverIndex(null);
     setIsTouchDragging(false);
-    setTouchPosition(null);
   }, [draggedIndex, dragOverIndex, localCategories, removeGhostElement]);
 
   const handleTouchCancel = useCallback(() => {
@@ -297,7 +291,6 @@ export function CategoryScroll({
     setDraggedIndex(null);
     setDragOverIndex(null);
     setIsTouchDragging(false);
-    setTouchPosition(null);
   }, [removeGhostElement]);
 
   // Cleanup ghost on unmount
@@ -401,15 +394,15 @@ export function CategoryScroll({
         </div>
       </div>
 
-      {/* Category Grid - 2 Rows with Scroll */}
+      {/* Category Grid - Vertical with overflow-y-auto */}
       <div
         ref={scrollRef}
         className={cn(
-          'relative px-4 py-1.5 overflow-x-auto scrollbar-hide scroll-smooth',
-          'h-[160px] overflow-y-hidden'
+          'relative px-4 py-1.5 scroll-smooth',
+          'max-h-[160px] overflow-y-auto'
         )}
       >
-        <div className="grid grid-flow-col auto-cols-max grid-rows-2 gap-2">
+        <div className="flex flex-wrap gap-2 content-start">
           {displayCategories.map((category, index) => {
             const isSelected = category.id === selectedCategory?.id;
             return (
