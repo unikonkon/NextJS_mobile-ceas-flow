@@ -12,6 +12,7 @@ import {
   X,
   Sparkles,
   Tag,
+  Move,
 } from 'lucide-react';
 import type { Category, TransactionType, CategoryType } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,8 @@ interface CategoryScrollProps {
 }
 
 const VISIBLE_COUNT_KEY = 'category-visible-count';
+const LONG_PRESS_DURATION = 170; // ms - standard mobile long-press
+const DRAG_THRESHOLD = 5; // px - minimum movement to cancel long-press
 
 export function CategoryScroll({
   categories,
@@ -42,6 +45,9 @@ export function CategoryScroll({
 }: CategoryScrollProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const categoryGridRef = useRef<HTMLDivElement>(null);
+  const categoryItemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const ghostRef = useRef<HTMLDivElement | null>(null);
 
   // Settings modal state
   const [showSettings, setShowSettings] = useState(false);
@@ -51,9 +57,14 @@ export function CategoryScroll({
   const [localVisibleCount, setLocalVisibleCount] = useState(8);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Drag state
+  // Drag state (for both mouse and touch)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
+  const [touchPosition, setTouchPosition] = useState<{ x: number; y: number } | null>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const initialTouchOffset = useRef<{ x: number; y: number } | null>(null);
 
   // Add category form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -108,17 +119,193 @@ export function CategoryScroll({
     [draggedIndex]
   );
 
+  // Clean up drag state only - reorder happens in onDrop
   const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }, []);
+
+  // Create ghost element for touch dragging
+  const createGhostElement = useCallback((sourceElement: HTMLElement, touch: React.Touch) => {
+    // Remove existing ghost
+    if (ghostRef.current) {
+      ghostRef.current.remove();
+      ghostRef.current = null;
+    }
+
+    const rect = sourceElement.getBoundingClientRect();
+    const ghost = sourceElement.cloneNode(true) as HTMLDivElement;
+    
+    // Style the ghost element
+    ghost.style.cssText = `
+      position: fixed;
+      left: ${rect.left}px;
+      top: ${rect.top}px;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0.9;
+      transform: scale(1.05);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      border-radius: 12px;
+      transition: transform 0.1s ease-out;
+    `;
+    
+    document.body.appendChild(ghost);
+    ghostRef.current = ghost;
+
+    // Store offset from touch to element center
+    initialTouchOffset.current = {
+      x: touch.clientX - (rect.left + rect.width / 2),
+      y: touch.clientY - (rect.top + rect.height / 2),
+    };
+  }, []);
+
+  // Update ghost position
+  const updateGhostPosition = useCallback((touch: React.Touch) => {
+    if (!ghostRef.current || !initialTouchOffset.current) return;
+    
+    const element = ghostRef.current;
+    const rect = element.getBoundingClientRect();
+    const newX = touch.clientX - initialTouchOffset.current.x - rect.width / 2;
+    const newY = touch.clientY - initialTouchOffset.current.y - rect.height / 2;
+    
+    element.style.left = `${newX}px`;
+    element.style.top = `${newY}px`;
+  }, []);
+
+  // Remove ghost element
+  const removeGhostElement = useCallback(() => {
+    if (ghostRef.current) {
+      ghostRef.current.remove();
+      ghostRef.current = null;
+    }
+    initialTouchOffset.current = null;
+  }, []);
+
+  // Touch handlers for mobile with long-press detection
+  const handleTouchStart = useCallback((e: React.TouchEvent, index: number) => {
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+
+    // Start long press timer
+    longPressTimer.current = setTimeout(() => {
+      const element = categoryItemRefs.current.get(index);
+      if (element) {
+        setDraggedIndex(index);
+        setIsTouchDragging(true);
+        setTouchPosition({ x: touch.clientX, y: touch.clientY });
+        createGhostElement(element, touch);
+        
+        // Haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+      }
+    }, LONG_PRESS_DURATION);
+  }, [createGhostElement]);
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+
+      // Cancel long press if moved before it triggers
+      if (longPressTimer.current && touchStartPos.current) {
+        const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+        const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+        if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+      }
+
+      if (draggedIndex === null || !categoryGridRef.current) return;
+
+      // Prevent scrolling while dragging
+      e.preventDefault();
+      
+      // Update touch position and ghost
+      setTouchPosition({ x: touch.clientX, y: touch.clientY });
+      updateGhostPosition(touch);
+
+      const elements = categoryItemRefs.current;
+
+      // Find which element the touch is over
+      let foundIndex: number | null = null;
+      for (const [idx, element] of elements.entries()) {
+        if (!element || idx === draggedIndex) continue;
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        // Check if touch is within element bounds with some tolerance
+        const tolerance = 10;
+        if (
+          touch.clientX >= rect.left - tolerance &&
+          touch.clientX <= rect.right + tolerance &&
+          touch.clientY >= rect.top - tolerance &&
+          touch.clientY <= rect.bottom + tolerance
+        ) {
+          foundIndex = idx;
+          break;
+        }
+      }
+      
+      setDragOverIndex(foundIndex);
+    },
+    [draggedIndex, updateGhostPosition]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    // Clear long press timer
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+
+    // Perform reorder if valid
     if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
       const newCategories = [...localCategories];
       const [removed] = newCategories.splice(draggedIndex, 1);
       newCategories.splice(dragOverIndex, 0, removed);
       setLocalCategories(newCategories);
       setHasChanges(true);
+      
+      // Haptic feedback on drop
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
     }
+    
+    // Cleanup
+    removeGhostElement();
     setDraggedIndex(null);
     setDragOverIndex(null);
-  }, [draggedIndex, dragOverIndex, localCategories]);
+    setIsTouchDragging(false);
+    setTouchPosition(null);
+  }, [draggedIndex, dragOverIndex, localCategories, removeGhostElement]);
+
+  const handleTouchCancel = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+    removeGhostElement();
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    setIsTouchDragging(false);
+    setTouchPosition(null);
+  }, [removeGhostElement]);
+
+  // Cleanup ghost on unmount
+  useEffect(() => {
+    return () => {
+      removeGhostElement();
+    };
+  }, [removeGhostElement]);
 
   const handleVisibleCountChange = useCallback((count: number) => {
     setLocalVisibleCount(count);
@@ -403,21 +590,52 @@ export function CategoryScroll({
               </div>
             </div>
 
-            {/* Divider */}
+            {/* Divider with drag instruction */}
             <div className="px-5 pb-2">
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-                  <GripVertical className="size-2.5" />
-                  ลากเพื่อจัดลำดับ
+                <span className={cn(
+                  "text-[10px] font-medium flex items-center gap-1 transition-colors",
+                  isTouchDragging 
+                    ? transactionType === 'expense' ? 'text-expense' : 'text-income'
+                    : 'text-muted-foreground'
+                )}>
+                  {isTouchDragging ? (
+                    <>
+                      <Move className="size-2.5 animate-pulse" />
+                      ลากไปวางตำแหน่งใหม่
+                    </>
+                  ) : (
+                    <>
+                      <GripVertical className="size-2.5" />
+                      กดค้าง แล้วลากเพื่อจัดลำดับ
+                    </>
+                  )}
                 </span>
                 <div className="flex-1 h-px bg-border" />
               </div>
             </div>
 
             {/* Category Grid - Horizontal Rows with Scroll-Y */}
-            <div className="flex-1 overflow-y-auto px-3 pb-2 min-h-0 max-h-[40vh]">
-              <div className="flex flex-wrap gap-2 content-start">
+            <div
+              className={cn(
+                'flex-1 overflow-y-auto px-3 pb-2 min-h-0 max-h-[40vh] relative',
+                isTouchDragging && 'overflow-hidden'
+              )}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchCancel}
+            >
+              {/* Touch drag overlay indicator */}
+              {isTouchDragging && (
+                <div className={cn(
+                  "absolute inset-0 z-40 pointer-events-none",
+                  "bg-linear-to-b from-transparent via-transparent to-background/50",
+                  "animate-in fade-in duration-200"
+                )} />
+              )}
+              
+              <div ref={categoryGridRef} className="flex flex-wrap gap-2 content-start relative z-10">
                 {localCategories.map((category, index) => {
                   const isVisible = index < localVisibleCount;
                   const isDragging = draggedIndex === index;
@@ -426,7 +644,10 @@ export function CategoryScroll({
                   return (
                     <div
                       key={category.id}
-                      draggable
+                      ref={(el) => {
+                        if (el) categoryItemRefs.current.set(index, el);
+                      }}
+                      draggable={!isTouchDragging}
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = 'move';
                         e.dataTransfer.setData('text/plain', index.toString());
@@ -451,24 +672,34 @@ export function CategoryScroll({
                         setDragOverIndex(null);
                       }}
                       onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, index)}
                       className={cn(
                         'group relative flex flex-col items-center gap-1 p-2 rounded-xl',
-                        'w-[70px] cursor-grab active:cursor-grabbing',
-                        'border-2 transition-all duration-200',
+                        'w-[70px] cursor-grab active:cursor-grabbing select-none',
+                        'border-2 transition-all',
                         'hover:shadow-md',
-                        isDragging && 'opacity-40 scale-90 shadow-xl z-10',
-                        isDragOver &&
-                          cn(
-                            'border-dashed scale-105',
-                            transactionType === 'expense'
-                              ? 'border-expense bg-expense/10'
-                              : 'border-income bg-income/10'
-                          ),
-                        !isDragging &&
-                          !isDragOver &&
-                          (isVisible
-                            ? 'border-border/50 bg-card hover:border-foreground/30 hover:bg-accent/30'
-                            : 'border-transparent bg-muted/20 opacity-50')
+                        // Touch dragging - disable pointer events on all items except the source
+                        isTouchDragging && draggedIndex !== null && 'touch-none pointer-events-none',
+                        // Dragging item - make it semi-transparent (ghost follows finger)
+                        isDragging && cn(
+                          'opacity-30 scale-95',
+                          transactionType === 'expense'
+                            ? 'border-expense/50 bg-expense/5'
+                            : 'border-income/50 bg-income/5'
+                        ),
+                        // Drop target - highlight with animation
+                        isDragOver && cn(
+                          'border-dashed scale-110 animate-pulse',
+                          transactionType === 'expense'
+                            ? 'border-expense bg-expense/20 shadow-lg shadow-expense/20'
+                            : 'border-income bg-income/20 shadow-lg shadow-income/20'
+                        ),
+                        // Normal state
+                        !isDragging && !isDragOver && (
+                          isVisible
+                            ? 'border-border/50 bg-card hover:border-foreground/30 hover:bg-accent/30 duration-200'
+                            : 'border-transparent bg-muted/20 opacity-50 duration-200'
+                        )
                       )}
                     >
                       {/* Order Badge */}
@@ -486,9 +717,18 @@ export function CategoryScroll({
                         {index + 1}
                       </div>
 
-                      {/* Drag Handle Icon */}
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <GripVertical className="size-3 text-muted-foreground" />
+                      {/* Drag Handle Icon - visible on mobile */}
+                      <div className={cn(
+                        "absolute top-1 right-1 transition-all duration-200",
+                        "opacity-40 group-hover:opacity-100",
+                        isDragOver && "opacity-100 scale-110"
+                      )}>
+                        <GripVertical className={cn(
+                          "size-3",
+                          isDragOver 
+                            ? transactionType === 'expense' ? 'text-expense' : 'text-income'
+                            : 'text-muted-foreground'
+                        )} />
                       </div>
 
                       {/* Category Icon */}

@@ -69,10 +69,14 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
           isInitialized: true,
         });
       } else {
-        // Convert stored categories back to runtime format
+        // Convert stored categories back to runtime format and sort by order
         const categories = storedCategories.map(fromStoredCategory);
-        const expense = categories.filter((c) => c.type === 'expense');
-        const income = categories.filter((c) => c.type === 'income');
+        const expense = categories
+          .filter((c) => c.type === 'expense')
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const income = categories
+          .filter((c) => c.type === 'income')
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
         set({
           expenseCategories: expense,
@@ -94,10 +98,14 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
   },
 
   addCategory: async (input) => {
+    const { expenseCategories, incomeCategories } = get();
+    const existingCategories = input.type === 'expense' ? expenseCategories : incomeCategories;
+
     const newCategory: Category = {
       id: `cat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name: input.name,
       type: input.type,
+      order: existingCategories.length, // Add at end
     };
 
     // Update Zustand state immediately
@@ -135,11 +143,17 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
   },
 
   reorderCategories: async (type, categories) => {
+    // Update order field for each category based on new position
+    const orderedCategories = categories.map((cat, index) => ({
+      ...cat,
+      order: index,
+    }));
+
     // Update Zustand state immediately
     if (type === 'expense') {
-      set({ expenseCategories: categories });
+      set({ expenseCategories: orderedCategories });
     } else {
-      set({ incomeCategories: categories });
+      set({ incomeCategories: orderedCategories });
     }
 
     // Persist new order to IndexedDB
@@ -147,9 +161,10 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
       const { expenseCategories, incomeCategories } = get();
       const allCategories = [...expenseCategories, ...incomeCategories];
 
-      // Clear and re-add to preserve order
-      await db.categories.clear();
-      await db.categories.bulkPut(allCategories.map(toStoredCategory));
+      // Update each category with its order
+      await db.categories.bulkPut(
+        allCategories.map((cat, index) => toStoredCategory(cat, cat.order ?? index))
+      );
     } catch (error) {
       console.error('Failed to persist category order:', error);
     }

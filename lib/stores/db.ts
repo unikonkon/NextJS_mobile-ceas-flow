@@ -25,6 +25,7 @@ export interface StoredCategory {
   id: string;
   name: string;
   type: 'expense' | 'income';
+  order?: number; // For sorting categories
 }
 
 export interface StoredWallet {
@@ -57,6 +58,13 @@ export class AppDatabase extends Dexie {
       categories: 'id, type',
       wallets: 'id, bookId, type',
     });
+
+    // Version 2: Add order field to categories for sorting
+    this.version(2).stores({
+      transactions: 'id, bookId, walletId, categoryId, type, date, createdAt',
+      categories: 'id, type, order',
+      wallets: 'id, bookId, type',
+    });
   }
 }
 
@@ -85,11 +93,12 @@ export function fromStoredTransaction(s: StoredTransaction): Transaction {
   };
 }
 
-export function toStoredCategory(c: Category): StoredCategory {
+export function toStoredCategory(c: Category, index?: number): StoredCategory {
   return {
     id: c.id,
     name: c.name,
     type: c.type,
+    order: c.order ?? index ?? 0,
   };
 }
 
@@ -98,6 +107,7 @@ export function fromStoredCategory(s: StoredCategory): Category {
     id: s.id,
     name: s.name,
     type: s.type,
+    order: s.order ?? 0,
   };
 }
 

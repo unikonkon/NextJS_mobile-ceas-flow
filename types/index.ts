@@ -41,6 +41,7 @@ export interface Category {
   id: string;
   name: string;
   type: CategoryType;
+  order?: number; // For sorting categories
 }
 
 export interface CategorySummary {
