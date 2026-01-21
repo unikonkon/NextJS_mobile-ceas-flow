@@ -536,7 +536,7 @@ export function CategoryScroll({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Decorative gradient */}
-            <div className="absolute top-0 left-0 right-0 h-24 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 left-0 right-0 h-20 overflow-hidden pointer-events-none">
               <div
                 className={cn(
                   'absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl opacity-20',

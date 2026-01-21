@@ -11,7 +11,6 @@ interface CalculatorKeypadProps {
   transactionType: TransactionType;
   canSubmit: boolean;
   onNumber: (num: string) => void;
-  onDecimal: () => void;
   onOperation: (op: Operation) => void;
   onEquals: () => void;
   onClear: () => void;
@@ -25,7 +24,6 @@ export function CalculatorKeypad({
   transactionType,
   canSubmit,
   onNumber,
-  onDecimal,
   onOperation,
   onEquals,
   onClear,
@@ -88,14 +86,12 @@ export function CalculatorKeypad({
         {/* Row 5 */}
         <CalcButton label="00" onClick={() => { onNumber('0'); onNumber('0'); }} />
         <CalcButton label="0" onClick={() => onNumber('0')} />
-        <CalcButton label="." onClick={onDecimal} />
-
         {/* Submit Button */}
         <button
           onClick={onSubmit}
           disabled={!canSubmit}
           className={cn(
-            "relative flex h-12 items-center justify-center gap-2 rounded-xl font-semibold text-white transition-all duration-300",
+            "col-span-2 relative flex h-12 items-center justify-center gap-2 rounded-xl font-semibold text-white transition-all duration-300",
             "active:scale-95 disabled:opacity-40 disabled:active:scale-100",
             canSubmit && "shadow-lg",
             transactionType === 'expense' && "bg-expense shadow-expense/30 hover:bg-expense/90",

@@ -47,7 +47,8 @@ export function useCalculator(options: UseCalculatorOptions = {}): UseCalculator
       default: return displayValue;
     }
 
-    return result.toString();
+    // Return as integer (no decimals)
+    return Math.round(result).toString();
   }, [previousValue, displayValue, operation]);
 
   const handleNumber = useCallback((num: string) => {
@@ -57,22 +58,19 @@ export function useCalculator(options: UseCalculatorOptions = {}): UseCalculator
       newValue = num;
       setShouldResetDisplay(false);
     } else {
-      if (displayValue.replace('.', '').length >= 9) return;
-      newValue = displayValue + num;
+      // Remove decimal point if exists, only allow integers
+      const integerValue = displayValue.replace('.', '');
+      if (integerValue.length >= 9) return;
+      newValue = integerValue + num;
     }
 
     setDisplayValue(newValue);
   }, [shouldResetDisplay, displayValue]);
 
   const handleDecimal = useCallback(() => {
-    if (shouldResetDisplay) {
-      setDisplayValue('0.');
-      setShouldResetDisplay(false);
-      return;
-    }
-    if (displayValue.includes('.')) return;
-    setDisplayValue(displayValue + '.');
-  }, [shouldResetDisplay, displayValue]);
+    // No-op: decimals are not supported, calculator only works with integers
+    return;
+  }, []);
 
   const handleOperation = useCallback((op: Operation) => {
     if (previousValue && operation && !shouldResetDisplay) {
@@ -80,7 +78,9 @@ export function useCalculator(options: UseCalculatorOptions = {}): UseCalculator
       setDisplayValue(result);
       setPreviousValue(result);
     } else {
-      setPreviousValue(displayValue);
+      // Store as integer (remove decimals)
+      const integerValue = Math.round(parseFloat(displayValue) || 0).toString();
+      setPreviousValue(integerValue);
     }
     setOperation(op);
     setShouldResetDisplay(true);
@@ -90,7 +90,9 @@ export function useCalculator(options: UseCalculatorOptions = {}): UseCalculator
     if (!previousValue || !operation) return;
 
     const result = calculate();
-    setDisplayValue(result);
+    // Ensure result is integer
+    const integerResult = Math.round(parseFloat(result) || 0).toString();
+    setDisplayValue(integerResult);
     setPreviousValue(null);
     setOperation(null);
     setShouldResetDisplay(true);
@@ -108,18 +110,17 @@ export function useCalculator(options: UseCalculatorOptions = {}): UseCalculator
       setDisplayValue('0');
       return;
     }
-    setDisplayValue(displayValue.slice(0, -1) || '0');
+    // Remove decimal point if exists, only work with integers
+    const integerValue = displayValue.replace('.', '');
+    const newValue = integerValue.slice(0, -1) || '0';
+    setDisplayValue(newValue);
   }, [shouldResetDisplay, displayValue]);
 
   const formatDisplay = useCallback((val: string) => {
     const num = parseFloat(val);
     if (isNaN(num)) return '0';
-    if (val.endsWith('.')) return formatNumber(num) + '.';
-    if (val.includes('.')) {
-      const parts = val.split('.');
-      return formatNumber(parseFloat(parts[0])) + '.' + parts[1];
-    }
-    return formatNumber(num);
+    // Always return as integer (no decimals)
+    return formatNumber(Math.round(num));
   }, []);
 
   const reset = useCallback(() => {

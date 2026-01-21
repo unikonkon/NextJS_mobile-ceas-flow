@@ -237,10 +237,10 @@ export function EditTransactionSheet({
           />
 
           {/* Amount Display - Split Layout Card */}
-          <div className="px-3 py-1">
+          <div className="px-1 py-1">
             <div
               className={cn(
-                "relative overflow-hidden rounded-2xl transition-all duration-300",
+                "relative overflow-hidden rounded-xl transition-all duration-300",
                 "bg-linear-to-br from-card via-card to-muted/20",
                 "border border-border/50 shadow-sm"
               )}
@@ -330,7 +330,6 @@ export function EditTransactionSheet({
             transactionType={transactionType}
             canSubmit={canSave}
             onNumber={calculator.handleNumber}
-            onDecimal={calculator.handleDecimal}
             onOperation={calculator.handleOperation}
             onEquals={calculator.handleEquals}
             onClear={calculator.handleClear}

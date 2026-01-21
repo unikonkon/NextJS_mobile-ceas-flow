@@ -134,10 +134,10 @@ export function AddTransactionSheet({
           />
 
           {/* Amount Display - Split Layout Card */}
-          <div className="px-3 py-2">
+          <div className="px-1 py-2">
             <div
               className={cn(
-                "relative overflow-hidden rounded-2xl transition-all duration-300",
+                "relative overflow-hidden rounded-xl transition-all duration-300",
                 "bg-linear-to-br from-card via-card to-muted/20",
                 "border border-border/50 shadow-sm",
                 selectedCategory && "ring-2 ring-primary/20"
@@ -230,7 +230,6 @@ export function AddTransactionSheet({
             transactionType={transactionType}
             canSubmit={canSubmit}
             onNumber={calculator.handleNumber}
-            onDecimal={calculator.handleDecimal}
             onOperation={calculator.handleOperation}
             onEquals={calculator.handleEquals}
             onClear={calculator.handleClear}
