@@ -19,13 +19,10 @@ export function TransactionCard({
 }: TransactionCardProps) {
   const isExpense = transaction.type === 'expense';
   const isIncome = transaction.type === 'income';
-  const isTransfer = transaction.type === 'transfer';
 
   const amountDisplay = isExpense
     ? `-${formatCurrency(transaction.amount, transaction.currency)}`
-    : isIncome
-    ? `+${formatCurrency(transaction.amount, transaction.currency)}`
-    : formatCurrency(transaction.amount, transaction.currency);
+    : `+${formatCurrency(transaction.amount, transaction.currency)}`;
 
   return (
     <button
@@ -42,8 +39,7 @@ export function TransactionCard({
         className={cn(
           'flex size-10 items-center justify-center rounded-xl bg-muted/60 text-lg font-medium',
           isExpense && 'bg-expense/10 text-expense',
-          isIncome && 'bg-income/10 text-income',
-          isTransfer && 'bg-transfer/10 text-transfer'
+          isIncome && 'bg-income/10 text-income'
         )}
       >
         {transaction.category.name.charAt(0)}
@@ -60,12 +56,6 @@ export function TransactionCard({
             {transaction.note}
           </span>
         )}
-
-        {isTransfer && transaction.toWallet && transaction.wallet && (
-          <span className="text-xs text-muted-foreground">
-            {transaction.wallet.name} → {transaction.toWallet.name}
-          </span>
-        )}
       </div>
 
       {/* Amount */}
@@ -74,14 +64,13 @@ export function TransactionCard({
           className={cn(
             'font-numbers text-base font-semibold tabular-nums',
             isExpense && 'text-expense',
-            isIncome && 'text-income',
-            isTransfer && 'text-transfer'
+            isIncome && 'text-income'
           )}
         >
           {amountDisplay}
         </span>
 
-        {transaction.wallet && !isTransfer && (
+        {transaction.wallet && (
           <span className="text-[10px] text-muted-foreground">
             {transaction.wallet.name}
           </span>

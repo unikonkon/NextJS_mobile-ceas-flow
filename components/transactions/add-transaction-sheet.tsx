@@ -213,8 +213,7 @@ export function AddTransactionSheet({
             className={cn(
               "absolute inset-0 h-32 opacity-20 transition-all duration-100",
               transactionType === 'expense' && "bg-linear-to-b from-expense via-expense/50 to-transparent",
-              transactionType === 'income' && "bg-linear-to-b from-income via-income/50 to-transparent",
-              transactionType === 'transfer' && "bg-linear-to-b from-transfer via-transfer/50 to-transparent"
+              transactionType === 'income' && "bg-linear-to-b from-income via-income/50 to-transparent"
             )}
           />
 
@@ -230,7 +229,6 @@ export function AddTransactionSheet({
                 {[
                   { type: 'expense' as TransactionType, label: 'รายจ่าย', icon: '💸' },
                   { type: 'income' as TransactionType, label: 'รายรับ', icon: '💰' },
-                  { type: 'transfer' as TransactionType, label: 'โอนเงิน', icon: '🔄' },
                 ].map((item) => (
                   <button
                     key={item.type}
@@ -247,8 +245,7 @@ export function AddTransactionSheet({
                         className={cn(
                           "absolute inset-0 rounded-xl transition-all duration-300",
                           item.type === 'expense' && "bg-expense shadow-expense/30",
-                          item.type === 'income' && "bg-income shadow-income/30",
-                          item.type === 'transfer' && "bg-transfer shadow-transfer/30"
+                          item.type === 'income' && "bg-income shadow-income/30"
                         )}
                       />
                     )}
@@ -380,8 +377,7 @@ export function AddTransactionSheet({
                 <span className={cn(
                   "text-xl font-medium transition-colors",
                   transactionType === 'expense' && "text-expense/70",
-                  transactionType === 'income' && "text-income/70",
-                  transactionType === 'transfer' && "text-transfer/70"
+                  transactionType === 'income' && "text-income/70"
                 )}>
                   {currency}
                 </span>
@@ -487,8 +483,7 @@ export function AddTransactionSheet({
                   "active:scale-95 disabled:opacity-40 disabled:active:scale-100",
                   canSubmit && "shadow-lg",
                   transactionType === 'expense' && "bg-expense shadow-expense/30 hover:bg-expense/90",
-                  transactionType === 'income' && "bg-income shadow-income/30 hover:bg-income/90",
-                  transactionType === 'transfer' && "bg-transfer shadow-transfer/30 hover:bg-transfer/90"
+                  transactionType === 'income' && "bg-income shadow-income/30 hover:bg-income/90"
                 )}
               >
                 {canSubmit ? (

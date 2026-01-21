@@ -11,8 +11,7 @@ export interface StoredTransaction {
   bookId: string;
   walletId: string;
   categoryId: string;
-  toWalletId?: string;
-  type: 'expense' | 'income' | 'transfer';
+  type: 'expense' | 'income';
   amount: number;
   currency: string;
   date: string; // ISO string

@@ -109,17 +109,11 @@ export function HomeTab() {
           className={`flex items-center gap-2 px-5 py-3 rounded-2xl shadow-xl backdrop-blur-md
             ${toastType === 'income'
               ? 'bg-income/90 text-white'
-              : toastType === 'expense'
-                ? 'bg-expense/90 text-white'
-                : 'bg-transfer/90 text-white'
+              : 'bg-expense/90 text-white'
             }`}
         >
           <Sparkles className="size-5 animate-pulse" />
-          <span className="font-medium">
-            {toastType === 'income' ? 'บันทึกสำเร็จ!' :
-             toastType === 'expense' ? 'บันทึกสำเร็จ!' :
-             'โอนเงินสำเร็จ!'}
-          </span>
+          <span className="font-medium">บันทึกสำเร็จ!</span>
         </div>
       </div>
     </>

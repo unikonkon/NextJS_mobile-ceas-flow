@@ -1,14 +1,13 @@
 // ============================================
 // Transaction Types
 // ============================================
-export type TransactionType = 'expense' | 'income' | 'transfer';
+export type TransactionType = 'expense' | 'income';
 
 export interface Transaction {
   id: string;
   bookId: string;
   walletId: string;
   categoryId: string;
-  toWalletId?: string;
   type: TransactionType;
   amount: number;
   currency: string;
@@ -22,7 +21,6 @@ export interface Transaction {
 export interface TransactionWithCategory extends Transaction {
   category: Category;
   wallet?: Wallet;
-  toWallet?: Wallet;
 }
 
 export interface TransactionInput {
