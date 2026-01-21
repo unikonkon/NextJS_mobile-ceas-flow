@@ -28,7 +28,7 @@ export function TypeSelector({
   showIcons = true,
 }: TypeSelectorProps) {
   return (
-    <div className="relative px-4 pb-4">
+    <div className="relative px-4">
       <div className="flex justify-center">
         <div className="inline-flex rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
           {options.map((item) => (

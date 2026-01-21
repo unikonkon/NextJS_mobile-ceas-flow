@@ -133,7 +133,7 @@ export function EditTransactionSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[70vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
+        className="min-h-[72vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
       >
         <SheetTitle className="sr-only">แก้ไขรายการ</SheetTitle>
 
@@ -148,7 +148,7 @@ export function EditTransactionSheet({
             )}
           />
           {/* Handle bar */}
-          <div data-drag-handle className="flex justify-center pt-2 pb-3 touch-none">
+          <div data-drag-handle className="flex justify-center pt-2 pb-2 touch-none">
             <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
           </div>
 

@@ -149,7 +149,7 @@ export function CategoryScroll({
   const displayCategories = orderedCategories.slice(0, visibleCount);
 
   // Visible count options
-  const visibleCountOptions = [4, 6, 8, 10, 12];
+  const visibleCountOptions = [8, 10, 12, 14, 16, 18];
   const uniqueOptions = [...new Set([...visibleCountOptions, localCategories.length])].filter(
     (n) => n <= localCategories.length
   );
@@ -173,32 +173,16 @@ export function CategoryScroll({
   return (
     <div className="relative border-b border-border/50">
       {/* Header */}
-      <div className="mb-2 flex items-center justify-between px-4">
+      <div className="flex items-center justify-between px-4">
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
 
         <div className="flex items-center gap-2">
-          {/* Settings Button */}
-          <button
-            onClick={() => setShowSettings(true)}
-            className={cn(
-              'group flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl',
-              'text-xs font-medium transition-all duration-300',
-              'border border-transparent',
-              'hover:scale-105 active:scale-95',
-              transactionType === 'expense'
-                ? 'text-expense/70 hover:text-expense hover:bg-expense/10 hover:border-expense/30'
-                : 'text-income/70 hover:text-income hover:bg-income/10 hover:border-income/30'
-            )}
-          >
-            <Settings2 className="size-3.5 transition-transform duration-300 group-hover:rotate-90" />
-            <span>ตั้งค่า</span>
-          </button>
 
           {/* Selected Category Badge */}
           {selectedCategory && (
             <span
               className={cn(
-                'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold',
+                'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs',
                 'animate-in slide-in-from-right-2 duration-300',
                 'shadow-sm',
                 transactionType === 'expense' && 'text-expense bg-expense/10',
@@ -209,70 +193,110 @@ export function CategoryScroll({
               {selectedCategory.name}
             </span>
           )}
+
+          {/* Settings Button */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className={cn(
+              'group flex items-center gap-1.5 pl-2.5 py-1.5 rounded-xl',
+              'text-xs font-medium transition-all duration-300',
+              'border border-transparent',
+              'hover:scale-105 active:scale-95',
+              transactionType === 'expense'
+                ? 'text-expense/70 hover:text-expense hover:bg-expense/10 hover:border-expense/30'
+                : 'text-income/70 hover:text-income hover:bg-income/10 hover:border-income/30'
+            )}
+          >
+            <Settings2 className="size-3.5 transition-transform duration-300 group-hover:rotate-90" />
+            <span className="font-semibold">ตั้งค่า</span>
+          </button>
+
         </div>
       </div>
 
-      {/* Category Scroll List */}
+      {/* Category Grid - 2 Rows with Scroll */}
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto px-4 py-1 scrollbar-hide scroll-smooth"
+        className={cn(
+          'relative px-4 py-1.5 overflow-x-auto scrollbar-hide scroll-smooth',
+          'h-[160px] overflow-y-hidden'
+        )}
       >
-        {displayCategories.map((category, index) => {
-          const isSelected = category.id === selectedCategory?.id;
-          return (
-            <button
-              key={category.id}
-              data-category-id={category.id}
-              onClick={() => onSelect(category)}
-              className={cn(
-                'relative px-3 text-sm font-medium rounded-xl transition-all duration-300',
-                'hover:bg-accent/50 active:scale-95',
-                isSelected &&
+        <div className="grid grid-flow-col auto-cols-max grid-rows-2 gap-2">
+          {displayCategories.map((category, index) => {
+            const isSelected = category.id === selectedCategory?.id;
+            return (
+              <button
+                key={category.id}
+                data-category-id={category.id}
+                onClick={() => onSelect(category)}
+                className={cn(
+                  'group relative flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl',
+                  'transition-all duration-300 min-w-[60px]',
+                  'hover:bg-accent/50 active:scale-95',
+                  isSelected &&
                   cn(
                     'ring-2 shadow-lg',
                     transactionType === 'expense' &&
-                      'bg-expense/10 ring-expense/50 shadow-expense/20',
+                    'bg-expense/10 ring-expense/50 shadow-expense/20',
                     transactionType === 'income' &&
-                      'bg-income/10 ring-income/50 shadow-income/20'
+                    'bg-income/10 ring-income/50 shadow-income/20'
                   )
-              )}
-              style={{
-                animationDelay: `${index * 30}ms`,
-              }}
-            >
-              <div
-                className={cn(
-                  'flex size-11 items-center justify-center rounded-xl text-lg font-medium transition-transform',
-                  'bg-muted/60',
-                  isSelected && 'scale-110 bg-white dark:bg-card shadow-md'
                 )}
+                style={{
+                  animationDelay: `${index * 20}ms`,
+                }}
               >
-                {category.name.charAt(0)}
-              </div>
-              <span
-                className={cn(
-                  'text-[10px] font-medium text-muted-foreground whitespace-nowrap',
-                  isSelected && 'text-foreground font-semibold'
-                )}
-              >
-                {category.name}
-              </span>
-            </button>
-          );
-        })}
+                <div
+                  className={cn(
+                    'flex size-10 items-center justify-center rounded-xl text-base font-semibold',
+                    'transition-all duration-200',
+                    'bg-muted/50',
+                    isSelected && cn(
+                      'scale-105 shadow-md',
+                      transactionType === 'expense' && 'bg-expense/20 text-expense',
+                      transactionType === 'income' && 'bg-income/20 text-income'
+                    ),
+                    !isSelected && 'group-hover:bg-muted'
+                  )}
+                >
+                  {category.name.charAt(0)}
+                </div>
+                <span
+                  className={cn(
+                    'text-[9px] font-medium text-muted-foreground whitespace-nowrap max-w-[56px] truncate',
+                    isSelected && 'text-foreground font-semibold'
+                  )}
+                >
+                  {category.name}
+                </span>
+              </button>
+            );
+          })}
 
-        {/* Add New Category */}
-        <button
-          onClick={onAddNew}
-          className="group flex shrink-0 flex-col items-center gap-1.5 rounded-2xl px-3 py-2.5 transition-all hover:bg-accent/50 active:scale-95"
-        >
-          <div className="flex size-11 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 transition-colors group-hover:border-primary/50">
-            <span className="text-lg text-muted-foreground group-hover:text-primary">+</span>
-          </div>
-          <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-            เพิ่มใหม่
-          </span>
-        </button>
+          {/* Add New Category */}
+          <button
+            onClick={onAddNew}
+            className={cn(
+              'group flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl min-w-[60px]',
+              'transition-all duration-200 hover:bg-accent/30 active:scale-95'
+            )}
+          >
+            <div
+              className={cn(
+                'flex size-10 items-center justify-center rounded-xl',
+                'border-2 border-dashed border-muted-foreground/30',
+                'transition-all duration-200',
+                'group-hover:border-primary/50 group-hover:bg-primary/5'
+              )}
+            >
+              <Plus className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
+            <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap group-hover:text-primary">
+              เพิ่มใหม่
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Settings Modal - Inline like showDeleteConfirm */}
@@ -365,11 +389,11 @@ export function CategoryScroll({
                       'border-2',
                       localVisibleCount === count
                         ? cn(
-                            'scale-105 shadow-md',
-                            transactionType === 'expense'
-                              ? 'border-expense bg-expense/15 text-expense shadow-expense/20'
-                              : 'border-income bg-income/15 text-income shadow-income/20'
-                          )
+                          'scale-105 shadow-md',
+                          transactionType === 'expense'
+                            ? 'border-expense bg-expense/15 text-expense shadow-expense/20'
+                            : 'border-income bg-income/15 text-income shadow-income/20'
+                        )
                         : 'border-border bg-muted/30 text-muted-foreground hover:border-foreground/30'
                     )}
                   >
@@ -412,15 +436,15 @@ export function CategoryScroll({
                         'hover:shadow-sm',
                         isDragging && 'opacity-50 scale-95 shadow-lg',
                         isDragOver &&
-                          cn(
-                            'border-dashed',
-                            transactionType === 'expense' ? 'border-expense' : 'border-income'
-                          ),
+                        cn(
+                          'border-dashed',
+                          transactionType === 'expense' ? 'border-expense' : 'border-income'
+                        ),
                         !isDragging &&
-                          !isDragOver &&
-                          (isVisible
-                            ? 'border-border/50 bg-card hover:border-foreground/20'
-                            : 'border-transparent bg-muted/30 opacity-60')
+                        !isDragOver &&
+                        (isVisible
+                          ? 'border-border/50 bg-card hover:border-foreground/20'
+                          : 'border-transparent bg-muted/30 opacity-60')
                       )}
                     >
                       {/* Drag Handle */}
@@ -434,11 +458,11 @@ export function CategoryScroll({
                           'flex size-9 items-center justify-center rounded-lg text-sm font-bold',
                           isVisible
                             ? cn(
-                                'shadow-sm',
-                                transactionType === 'expense'
-                                  ? 'bg-expense/15 text-expense'
-                                  : 'bg-income/15 text-income'
-                              )
+                              'shadow-sm',
+                              transactionType === 'expense'
+                                ? 'bg-expense/15 text-expense'
+                                : 'bg-income/15 text-income'
+                            )
                             : 'bg-muted text-muted-foreground'
                         )}
                       >
@@ -464,10 +488,10 @@ export function CategoryScroll({
                           'flex items-center justify-center size-6 rounded-full',
                           isVisible
                             ? cn(
-                                transactionType === 'expense'
-                                  ? 'bg-expense/15 text-expense'
-                                  : 'bg-income/15 text-income'
-                              )
+                              transactionType === 'expense'
+                                ? 'bg-expense/15 text-expense'
+                                : 'bg-income/15 text-income'
+                            )
                             : 'bg-muted/50 text-muted-foreground'
                         )}
                       >

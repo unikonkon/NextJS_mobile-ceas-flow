@@ -89,7 +89,7 @@ export function AddTransactionSheet({
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent
         side="bottom"
-        className="h-[70vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
+        className="min-h-[72vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
       >
         {/* Hidden title for accessibility */}
         <SheetTitle className="sr-only">เพิ่มรายการ</SheetTitle>
@@ -99,14 +99,14 @@ export function AddTransactionSheet({
           {/* Decorative gradient background */}
           <div
             className={cn(
-              "absolute inset-0 h-32 opacity-20 transition-all duration-100",
+              "absolute inset-0  opacity-20 transition-all duration-100",
               transactionType === 'expense' && "bg-linear-to-b from-expense via-expense/50 to-transparent",
               transactionType === 'income' && "bg-linear-to-b from-income via-income/50 to-transparent"
             )}
           />
 
           {/* Handle bar */}
-          <div data-drag-handle className="flex justify-center pt-2 pb-3 touch-none">
+          <div data-drag-handle className="flex justify-center pt-2 pb-2 touch-none">
             <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
           </div>
 
@@ -119,7 +119,7 @@ export function AddTransactionSheet({
         </div>
 
         {/* Main Content Area */}
-        <div className="flex h-[calc(100%-80px)] flex-col">
+        <div className="flex flex-col">
           {/* Category Horizontal Scroll */}
           <CategoryScroll
             categories={currentCategories}
