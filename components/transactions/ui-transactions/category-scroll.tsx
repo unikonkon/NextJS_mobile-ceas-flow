@@ -415,9 +415,9 @@ export function CategoryScroll({
               </div>
             </div>
 
-            {/* Category List */}
-            <div className="flex-1 overflow-y-auto px-3 pb-2 min-h-0 max-h-[35vh]">
-              <div className="space-y-1.5">
+            {/* Category Grid - Horizontal Rows with Scroll-Y */}
+            <div className="flex-1 overflow-y-auto px-3 pb-2 min-h-0 max-h-[40vh]">
+              <div className="flex flex-wrap gap-2 content-start">
                 {localCategories.map((category, index) => {
                   const isVisible = index < localVisibleCount;
                   const isDragging = draggedIndex === index;
@@ -427,42 +427,82 @@ export function CategoryScroll({
                     <div
                       key={category.id}
                       draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', index.toString());
+                        handleDragStart(index);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        handleDragOver(e, index);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                        if (fromIndex !== index && !isNaN(fromIndex)) {
+                          const newCategories = [...localCategories];
+                          const [removed] = newCategories.splice(fromIndex, 1);
+                          newCategories.splice(index, 0, removed);
+                          setLocalCategories(newCategories);
+                          setHasChanges(true);
+                        }
+                        setDraggedIndex(null);
+                        setDragOverIndex(null);
+                      }}
                       onDragEnd={handleDragEnd}
                       className={cn(
-                        'group relative flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl',
-                        'border-2 transition-all duration-200 cursor-grab active:cursor-grabbing',
-                        'hover:shadow-sm',
-                        isDragging && 'opacity-50 scale-95 shadow-lg',
+                        'group relative flex flex-col items-center gap-1 p-2 rounded-xl',
+                        'w-[70px] cursor-grab active:cursor-grabbing',
+                        'border-2 transition-all duration-200',
+                        'hover:shadow-md',
+                        isDragging && 'opacity-40 scale-90 shadow-xl z-10',
                         isDragOver &&
-                        cn(
-                          'border-dashed',
-                          transactionType === 'expense' ? 'border-expense' : 'border-income'
-                        ),
+                          cn(
+                            'border-dashed scale-105',
+                            transactionType === 'expense'
+                              ? 'border-expense bg-expense/10'
+                              : 'border-income bg-income/10'
+                          ),
                         !isDragging &&
-                        !isDragOver &&
-                        (isVisible
-                          ? 'border-border/50 bg-card hover:border-foreground/20'
-                          : 'border-transparent bg-muted/30 opacity-60')
+                          !isDragOver &&
+                          (isVisible
+                            ? 'border-border/50 bg-card hover:border-foreground/30 hover:bg-accent/30'
+                            : 'border-transparent bg-muted/20 opacity-50')
                       )}
                     >
-                      {/* Drag Handle */}
-                      <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-muted/50 group-hover:bg-muted">
-                        <GripVertical className="size-3.5 text-muted-foreground" />
+                      {/* Order Badge */}
+                      <div
+                        className={cn(
+                          'absolute -top-1.5 -left-1.5 size-5 rounded-full flex items-center justify-center',
+                          'text-[9px] font-bold shadow-sm',
+                          isVisible
+                            ? transactionType === 'expense'
+                              ? 'bg-expense text-white'
+                              : 'bg-income text-white'
+                            : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        {index + 1}
+                      </div>
+
+                      {/* Drag Handle Icon */}
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <GripVertical className="size-3 text-muted-foreground" />
                       </div>
 
                       {/* Category Icon */}
                       <div
                         className={cn(
-                          'flex size-9 items-center justify-center rounded-lg text-sm font-bold',
+                          'flex size-10 items-center justify-center rounded-xl text-base font-bold',
+                          'transition-all duration-200',
                           isVisible
                             ? cn(
-                              'shadow-sm',
-                              transactionType === 'expense'
-                                ? 'bg-expense/15 text-expense'
-                                : 'bg-income/15 text-income'
-                            )
+                                'shadow-sm',
+                                transactionType === 'expense'
+                                  ? 'bg-expense/20 text-expense'
+                                  : 'bg-income/20 text-income'
+                              )
                             : 'bg-muted text-muted-foreground'
                         )}
                       >
@@ -470,33 +510,21 @@ export function CategoryScroll({
                       </div>
 
                       {/* Category Name */}
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={cn(
-                            'text-sm font-medium truncate',
-                            isVisible ? 'text-foreground' : 'text-muted-foreground'
-                          )}
-                        >
-                          {category.name}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground">#{index + 1}</p>
-                      </div>
-
-                      {/* Visibility Badge */}
-                      <div
+                      <span
                         className={cn(
-                          'flex items-center justify-center size-6 rounded-full',
-                          isVisible
-                            ? cn(
-                              transactionType === 'expense'
-                                ? 'bg-expense/15 text-expense'
-                                : 'bg-income/15 text-income'
-                            )
-                            : 'bg-muted/50 text-muted-foreground'
+                          'text-[9px] font-medium text-center truncate w-full',
+                          isVisible ? 'text-foreground' : 'text-muted-foreground'
                         )}
                       >
-                        {isVisible ? <Eye className="size-3" /> : <EyeOff className="size-3" />}
-                      </div>
+                        {category.name}
+                      </span>
+
+                      {/* Visibility Indicator */}
+                      {!isVisible && (
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
+                          <EyeOff className="size-3 text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
