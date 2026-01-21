@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -14,10 +14,15 @@ import { formatNumber, formatRelativeDate } from '@/lib/utils/format';
 import { AddCategoryModal } from '@/components/categories';
 import { useCategoryStore } from '@/lib/stores';
 import {
+  useCalculator,
+  TypeSelector,
+  CategoryScroll,
+  CalculatorKeypad,
+} from './ui-transactions';
+import {
   Calendar,
   FileText,
   Trash2,
-  Check,
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
@@ -39,8 +44,6 @@ interface EditTransactionSheetProps {
   onDelete: (id: string) => void;
 }
 
-type Operation = '+' | '-' | '×' | '÷' | null;
-
 export function EditTransactionSheet({
   transaction,
   open,
@@ -61,13 +64,8 @@ export function EditTransactionSheet({
   // Category store for adding new categories
   const addCategory = useCategoryStore((s) => s.addCategory);
 
-  // Calculator state
-  const [displayValue, setDisplayValue] = useState('0');
-  const [previousValue, setPreviousValue] = useState<string | null>(null);
-  const [operation, setOperation] = useState<Operation>(null);
-  const [shouldResetDisplay, setShouldResetDisplay] = useState(false);
-
-  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  // Calculator hook
+  const calculator = useCalculator();
   const currency = '฿';
 
   // Initialize from transaction
@@ -77,107 +75,15 @@ export function EditTransactionSheet({
       setSelectedCategory(transaction.category);
       setNote(transaction.note || '');
       setSelectedDate(transaction.date);
-      setDisplayValue(transaction.amount.toString());
-      setPreviousValue(null);
-      setOperation(null);
-      setShouldResetDisplay(false);
+      calculator.setDisplayValue(transaction.amount.toString());
+      calculator.reset();
+      calculator.setDisplayValue(transaction.amount.toString());
       setShowDeleteConfirm(false);
       setShowDatePicker(false);
     }
   }, [transaction, open]);
 
   const currentCategories = transactionType === 'income' ? incomeCategories : expenseCategories;
-
-  // Calculator functions
-  const calculate = useCallback(() => {
-    if (!previousValue || !operation) return displayValue;
-
-    const prev = parseFloat(previousValue);
-    const current = parseFloat(displayValue);
-
-    let result: number;
-    switch (operation) {
-      case '+': result = prev + current; break;
-      case '-': result = prev - current; break;
-      case '×': result = prev * current; break;
-      case '÷': result = current !== 0 ? prev / current : 0; break;
-      default: return displayValue;
-    }
-
-    return result.toString();
-  }, [previousValue, displayValue, operation]);
-
-  const handleNumber = (num: string) => {
-    let newValue: string;
-
-    if (shouldResetDisplay || displayValue === '0') {
-      newValue = num;
-      setShouldResetDisplay(false);
-    } else {
-      if (displayValue.replace('.', '').length >= 12) return;
-      newValue = displayValue + num;
-    }
-
-    setDisplayValue(newValue);
-  };
-
-  const handleDecimal = () => {
-    if (shouldResetDisplay) {
-      setDisplayValue('0.');
-      setShouldResetDisplay(false);
-      return;
-    }
-    if (displayValue.includes('.')) return;
-    setDisplayValue(displayValue + '.');
-  };
-
-  const handleOperation = (op: Operation) => {
-    if (previousValue && operation && !shouldResetDisplay) {
-      const result = calculate();
-      setDisplayValue(result);
-      setPreviousValue(result);
-    } else {
-      setPreviousValue(displayValue);
-    }
-    setOperation(op);
-    setShouldResetDisplay(true);
-  };
-
-  const handleEquals = () => {
-    if (!previousValue || !operation) return;
-
-    const result = calculate();
-    setDisplayValue(result);
-    setPreviousValue(null);
-    setOperation(null);
-    setShouldResetDisplay(true);
-  };
-
-  const handleClear = () => {
-    setDisplayValue('0');
-    setPreviousValue(null);
-    setOperation(null);
-    setShouldResetDisplay(false);
-  };
-
-  const handleBackspace = () => {
-    if (shouldResetDisplay || displayValue === '0' || displayValue.length === 1) {
-      setDisplayValue('0');
-      return;
-    }
-    setDisplayValue(displayValue.slice(0, -1) || '0');
-  };
-
-  const formatDisplay = (val: string) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) return '0';
-    if (val.endsWith('.')) return formatNumber(num) + '.';
-    if (val.includes('.')) {
-      const parts = val.split('.');
-      return formatNumber(parseFloat(parts[0])) + '.' + parts[1];
-    }
-    return formatNumber(num);
-  };
 
   const handleTypeChange = (type: TransactionType) => {
     setTransactionType(type);
@@ -190,16 +96,15 @@ export function EditTransactionSheet({
 
   const handleAddCategory = async (name: string, type: CategoryType) => {
     const newCategory = await addCategory({ name, type });
-    // Auto-select the newly created category
     setSelectedCategory(newCategory);
   };
 
   const handleSave = () => {
-    if (!transaction || !selectedCategory || parseFloat(displayValue) <= 0) return;
+    if (!transaction || !selectedCategory || parseFloat(calculator.displayValue) <= 0) return;
 
     onUpdate(transaction.id, {
       type: transactionType,
-      amount: parseFloat(displayValue),
+      amount: parseFloat(calculator.displayValue),
       categoryId: selectedCategory.id,
       date: selectedDate,
       note: note || undefined,
@@ -214,7 +119,7 @@ export function EditTransactionSheet({
     onOpenChange(false);
   };
 
-  const canSave = selectedCategory && parseFloat(displayValue) > 0;
+  const canSave = !!(selectedCategory && parseFloat(calculator.displayValue) > 0);
 
   // Date navigation
   const changeDate = (days: number) => {
@@ -273,38 +178,11 @@ export function EditTransactionSheet({
           </div>
 
           {/* Transaction Type Pills */}
-          <div className="relative px-4 pb-4">
-            <div className="flex justify-center">
-              <div className="inline-flex rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
-                {[
-                  { type: 'expense' as TransactionType, label: 'รายจ่าย' },
-                  { type: 'income' as TransactionType, label: 'รายรับ' },
-                ].map((item) => (
-                  <button
-                    key={item.type}
-                    onClick={() => handleTypeChange(item.type)}
-                    className={cn(
-                      "relative px-6 py-2 text-sm font-medium rounded-xl transition-all duration-300",
-                      transactionType === item.type
-                        ? "text-white shadow-lg"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {transactionType === item.type && (
-                      <div
-                        className={cn(
-                          "absolute inset-0 rounded-xl",
-                          item.type === 'expense' && "bg-expense",
-                          item.type === 'income' && "bg-income"
-                        )}
-                      />
-                    )}
-                    <span className="relative z-10">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <TypeSelector
+            value={transactionType}
+            onChange={handleTypeChange}
+            showIcons={false}
+          />
         </div>
 
         {/* Delete Confirmation Overlay */}
@@ -346,76 +224,14 @@ export function EditTransactionSheet({
         {/* Main Content */}
         <div className="flex h-[calc(100%-100px)] flex-col">
           {/* Category Scroll */}
-          <div className="border-b border-border/50">
-            <div className="mb-2 flex items-center justify-between px-4">
-              <span className="text-xs font-medium text-muted-foreground">หมวดหมู่</span>
-              {selectedCategory && (
-                <span className={cn(
-                  "flex items-center gap-1 text-xs font-semibold",
-                  transactionType === 'expense' && "text-expense",
-                  transactionType === 'income' && "text-income"
-                )}>
-                  <Check className="size-3" />
-                  {selectedCategory.name}
-                </span>
-              )}
-            </div>
-
-            <div
-              ref={categoryScrollRef}
-              className="flex gap-2 overflow-x-auto px-4 py-1 scrollbar-hide"
-            >
-              {currentCategories.map((category) => {
-                const isSelected = category.id === selectedCategory?.id;
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category)}
-                    className={cn(
-                      "group flex shrink-0 flex-col items-center gap-1.5 rounded-xl px-3 py-1 transition-all duration-200",
-                      "hover:bg-accent/50 active:scale-95",
-                      isSelected && cn(
-                        "ring-2 shadow-lg",
-                        transactionType === 'expense' && "bg-expense/10 ring-expense/50",
-                        transactionType === 'income' && "bg-income/10 ring-income/50"
-                      )
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex size-10 items-center justify-center rounded-xl text-base font-semibold transition-all",
-                        "bg-muted/60",
-                        isSelected && "scale-110 bg-white dark:bg-card shadow-md"
-                      )}
-                    >
-                      {category.name.charAt(0)}
-                    </div>
-                    <span
-                      className={cn(
-                        "text-[10px] font-medium text-muted-foreground whitespace-nowrap",
-                        isSelected && "text-foreground font-semibold"
-                      )}
-                    >
-                      {category.name}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {/* Add New Category */}
-              <button
-                onClick={() => setAddCategoryOpen(true)}
-                className="group flex shrink-0 flex-col items-center gap-1.5 rounded-xl px-3 py-1 transition-all hover:bg-accent/50 active:scale-95"
-              >
-                <div className="flex size-10 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 transition-colors group-hover:border-primary/50">
-                  <span className="text-base text-muted-foreground group-hover:text-primary">+</span>
-                </div>
-                <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-                  เพิ่มใหม่
-                </span>
-              </button>
-            </div>
-          </div>
+          <CategoryScroll
+            categories={currentCategories}
+            selectedCategory={selectedCategory}
+            transactionType={transactionType}
+            onSelect={setSelectedCategory}
+            onAddNew={() => setAddCategoryOpen(true)}
+            label="หมวดหมู่"
+          />
 
           {/* Amount Display */}
           <div className="px-4 ">
@@ -437,9 +253,9 @@ export function EditTransactionSheet({
                       {selectedCategory.name}
                     </span>
                   </div>
-                  {previousValue && operation && (
+                  {calculator.previousValue && calculator.operation && (
                     <span className="text-xs text-muted-foreground">
-                      {formatNumber(parseFloat(previousValue))} {operation}
+                      {formatNumber(parseFloat(calculator.previousValue))} {calculator.operation}
                     </span>
                   )}
                 </div>
@@ -457,10 +273,10 @@ export function EditTransactionSheet({
                 <span
                   className={cn(
                     "font-mono text-4xl font-bold tracking-tight",
-                    parseFloat(displayValue) > 0 ? "text-foreground" : "text-muted-foreground"
+                    parseFloat(calculator.displayValue) > 0 ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
-                  {formatDisplay(displayValue)}
+                  {calculator.formatDisplay(calculator.displayValue)}
                 </span>
               </div>
             </div>
@@ -508,79 +324,19 @@ export function EditTransactionSheet({
           </div>
 
           {/* Calculator */}
-          <div className="mt-auto bg-muted/30 px-3 pb-safe pt-3">
-            <div className="grid grid-cols-4 gap-1.5">
-              {/* Row 1 */}
-              <CalcButton label="C" onClick={handleClear} variant="secondary" />
-              <CalcButton
-                label="÷"
-                onClick={() => handleOperation('÷')}
-                variant="secondary"
-                isActive={operation === '÷'}
-              />
-              <CalcButton
-                label="×"
-                onClick={() => handleOperation('×')}
-                variant="secondary"
-                isActive={operation === '×'}
-              />
-              <CalcButton label="⌫" onClick={handleBackspace} variant="secondary" />
-
-              {/* Row 2 */}
-              <CalcButton label="7" onClick={() => handleNumber('7')} />
-              <CalcButton label="8" onClick={() => handleNumber('8')} />
-              <CalcButton label="9" onClick={() => handleNumber('9')} />
-              <CalcButton
-                label="-"
-                onClick={() => handleOperation('-')}
-                variant="secondary"
-                isActive={operation === '-'}
-              />
-
-              {/* Row 3 */}
-              <CalcButton label="4" onClick={() => handleNumber('4')} />
-              <CalcButton label="5" onClick={() => handleNumber('5')} />
-              <CalcButton label="6" onClick={() => handleNumber('6')} />
-              <CalcButton
-                label="+"
-                onClick={() => handleOperation('+')}
-                variant="secondary"
-                isActive={operation === '+'}
-              />
-
-              {/* Row 4 */}
-              <CalcButton label="1" onClick={() => handleNumber('1')} />
-              <CalcButton label="2" onClick={() => handleNumber('2')} />
-              <CalcButton label="3" onClick={() => handleNumber('3')} />
-              <CalcButton
-                label="="
-                onClick={handleEquals}
-                variant="secondary"
-                className="bg-muted"
-              />
-
-              {/* Row 5 */}
-              <CalcButton label="00" onClick={() => { handleNumber('0'); handleNumber('0'); }} />
-              <CalcButton label="0" onClick={() => handleNumber('0')} />
-              <CalcButton label="." onClick={handleDecimal} />
-
-              {/* Save Button */}
-              <button
-                onClick={handleSave}
-                disabled={!canSave}
-                className={cn(
-                  "relative flex h-12 items-center justify-center gap-2 rounded-xl font-semibold text-white transition-all duration-300",
-                  "active:scale-95 disabled:opacity-40 disabled:active:scale-100",
-                  canSave && "shadow-lg",
-                  transactionType === 'expense' && "bg-expense shadow-expense/30 hover:bg-expense/90",
-                  transactionType === 'income' && "bg-income shadow-income/30 hover:bg-income/90"
-                )}
-              >
-                <Check className="size-5" />
-                <span className="text-sm">บันทึก</span>
-              </button>
-            </div>
-          </div>
+          <CalculatorKeypad
+            operation={calculator.operation}
+            transactionType={transactionType}
+            canSubmit={canSave}
+            onNumber={calculator.handleNumber}
+            onDecimal={calculator.handleDecimal}
+            onOperation={calculator.handleOperation}
+            onEquals={calculator.handleEquals}
+            onClear={calculator.handleClear}
+            onBackspace={calculator.handleBackspace}
+            onSubmit={handleSave}
+            showSparkle={false}
+          />
         </div>
 
         {/* Add Category Modal */}
@@ -592,36 +348,5 @@ export function EditTransactionSheet({
         />
       </SheetContent>
     </Sheet>
-  );
-}
-
-// Calculator Button
-function CalcButton({
-  label,
-  onClick,
-  variant = 'default',
-  isActive = false,
-  className,
-}: {
-  label: string;
-  onClick: () => void;
-  variant?: 'default' | 'secondary';
-  isActive?: boolean;
-  className?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex h-12 items-center justify-center rounded-xl text-lg font-semibold transition-all duration-150",
-        "active:scale-95 active:bg-accent",
-        variant === 'default' && "bg-card hover:bg-accent text-foreground",
-        variant === 'secondary' && "bg-muted/60 hover:bg-muted text-muted-foreground",
-        isActive && "ring-2 ring-primary bg-primary/10 text-primary",
-        className
-      )}
-    >
-      {label}
-    </button>
   );
 }
