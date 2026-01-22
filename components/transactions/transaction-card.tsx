@@ -29,6 +29,7 @@ export function TransactionCard({
       onClick={onClick}
       className={cn(
         'group flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all duration-200',
+        'border-b border-border/50',
         'hover:bg-accent/50 active:scale-[0.98]',
         isNew && 'animate-pop-in-glow transaction-new bg-accent/30',
         className

@@ -126,7 +126,7 @@ export function AddTransactionSheet({
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent
         side="bottom"
-        className="min-h-[54vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
+        className="min-h-[45vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
       >
         {/* Hidden title for accessibility */}
         <SheetTitle className="sr-only">เพิ่มรายการ</SheetTitle>

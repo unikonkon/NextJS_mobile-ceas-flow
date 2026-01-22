@@ -5,7 +5,7 @@ import { Header, PageContainer } from '@/components/layout';
 import { SummaryBar, TransactionList, EditTransactionSheet } from '@/components/transactions';
 import { MonthPicker } from '@/components/common';
 import { Button } from '@/components/ui/button';
-import { Calendar, Search, Sparkles } from 'lucide-react';
+import { Calendar, Search } from 'lucide-react';
 import { useTransactionStore, useCategoryStore } from '@/lib/stores';
 import { TransactionWithCategory } from '@/types';
 
@@ -109,10 +109,20 @@ export function HomeTab() {
           className={`flex items-center gap-2 px-5 py-3 rounded-2xl shadow-xl backdrop-blur-md
             ${toastType === 'income'
               ? 'bg-income/90 text-white'
-              : 'bg-expense/90 text-white'
+              : 'bg-income/90 text-white'
             }`}
         >
-          <Sparkles className="size-5 animate-pulse" />
+          {/* Changed from Sparkles to CheckCircle for success indication */}
+          <svg
+            className="size-5 text-white"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" className="opacity-70"/>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 13l3 3 5-5" />
+          </svg>
           <span className="font-medium">บันทึกสำเร็จ!</span>
         </div>
       </div>

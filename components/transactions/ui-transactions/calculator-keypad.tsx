@@ -107,10 +107,6 @@ export function CalculatorKeypad({
             <span className="text-sm">บันทึก</span>
           )}
 
-          {/* Sparkle effect when ready */}
-          {showSparkle && canSubmit && (
-            <Sparkles className="absolute -right-1 -top-1 size-4 text-white/80 animate-pulse" />
-          )}
         </button>
       </div>
     </div>

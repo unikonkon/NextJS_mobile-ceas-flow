@@ -12,8 +12,27 @@ import { mockTransactions } from '@/lib/mock/data';
 // ============================================
 // Helper Functions
 // ============================================
-function computeDailySummaries(transactions: TransactionWithCategory[]): DailySummary[] {
-  const grouped = transactions.reduce((acc, transaction) => {
+function filterTransactionsByMonth(
+  transactions: TransactionWithCategory[],
+  selectedMonth: Date
+): TransactionWithCategory[] {
+  const month = selectedMonth.getMonth();
+  const year = selectedMonth.getFullYear();
+  return transactions.filter((t) => {
+    return t.date.getMonth() === month && t.date.getFullYear() === year;
+  });
+}
+
+function computeDailySummaries(
+  transactions: TransactionWithCategory[],
+  selectedMonth?: Date
+): DailySummary[] {
+  // Filter by month if provided
+  const filteredTransactions = selectedMonth
+    ? filterTransactionsByMonth(transactions, selectedMonth)
+    : transactions;
+
+  const grouped = filteredTransactions.reduce((acc, transaction) => {
     const dateKey = transaction.date.toDateString();
     if (!acc[dateKey]) {
       acc[dateKey] = {
@@ -156,7 +175,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
         const selectedMonth = get().selectedMonth;
         set({
           transactions: transactionsWithCategory,
-          dailySummaries: computeDailySummaries(transactionsWithCategory),
+          dailySummaries: computeDailySummaries(transactionsWithCategory, selectedMonth),
           monthlySummary: computeMonthlySummary(transactionsWithCategory, selectedMonth),
           isLoading: false,
           isInitialized: true,
@@ -175,7 +194,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
         const selectedMonth = get().selectedMonth;
         set({
           transactions,
-          dailySummaries: computeDailySummaries(transactions),
+          dailySummaries: computeDailySummaries(transactions, selectedMonth),
           monthlySummary: computeMonthlySummary(transactions, selectedMonth),
           isLoading: false,
           isInitialized: true,
@@ -215,7 +234,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
     set({
       transactions: newTransactions,
       newTransactionIds: [...get().newTransactionIds, newTransaction.id],
-      dailySummaries: computeDailySummaries(newTransactions),
+      dailySummaries: computeDailySummaries(newTransactions, selectedMonth),
       monthlySummary: computeMonthlySummary(newTransactions, selectedMonth),
       toastVisible: true,
       toastType: input.type,
@@ -288,7 +307,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
     set({
       transactions,
-      dailySummaries: computeDailySummaries(transactions),
+      dailySummaries: computeDailySummaries(transactions, selectedMonth),
       monthlySummary: computeMonthlySummary(transactions, selectedMonth),
       toastVisible: true,
       toastType: updatedTransaction.type,
@@ -328,7 +347,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
     // Update Zustand state immediately
     set({
       transactions,
-      dailySummaries: computeDailySummaries(transactions),
+      dailySummaries: computeDailySummaries(transactions, selectedMonth),
       monthlySummary: computeMonthlySummary(transactions, selectedMonth),
     });
 
@@ -348,6 +367,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
     const transactions = get().transactions;
     set({
       selectedMonth: date,
+      dailySummaries: computeDailySummaries(transactions, date),
       monthlySummary: computeMonthlySummary(transactions, date),
     });
   },

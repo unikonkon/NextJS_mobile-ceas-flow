@@ -132,7 +132,7 @@ export function EditTransactionSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="min-h-[62vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
+        className="min-h-[52vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
       >
         <SheetTitle className="sr-only">แก้ไขรายการ</SheetTitle>
 
