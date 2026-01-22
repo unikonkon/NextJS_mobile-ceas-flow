@@ -13,6 +13,7 @@ import {
 interface CategoryInput {
   name: string;
   type: 'expense' | 'income';
+  icon?: string;
 }
 
 interface CategoryStore {
@@ -105,15 +106,16 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
     const { expenseCategories, incomeCategories } = get();
     const existingCategories = input.type === 'expense' ? expenseCategories : incomeCategories;
 
-    // Create base category (DB only stores id, name, type, order)
+    // Create base category with optional custom icon
     const baseCategory: Category = {
       id: `cat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name: input.name,
       type: input.type,
       order: existingCategories.length, // Add at end
+      icon: input.icon, // Store custom icon if provided
     };
 
-    // Enrich with icon/color from constants for UI display
+    // Enrich with icon/color from constants for UI display (will use custom icon if set)
     const newCategory = enrichCategory(baseCategory);
 
     // Update Zustand state immediately (with enriched data)
@@ -127,7 +129,7 @@ export const useCategoryStore = create<CategoryStore>((set, get) => ({
       }));
     }
 
-    // Persist to IndexedDB (only base data - no icon/color)
+    // Persist to IndexedDB (includes icon if provided)
     try {
       await db.categories.put(toStoredCategory(baseCategory));
     } catch (error) {

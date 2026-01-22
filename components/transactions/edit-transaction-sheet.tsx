@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { DateNavigator } from '@/components/ui/date-time-picker';
 import { Category, TransactionType, TransactionWithCategory, CategoryType } from '@/types';
 import { formatNumber } from '@/lib/utils/format';
-import { AddCategoryModal } from '@/components/categories';
 import { useCategoryStore } from '@/lib/stores';
 import {
   useCalculator,
@@ -56,7 +55,6 @@ export function EditTransactionSheet({
   const [note, setNote] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [addCategoryOpen, setAddCategoryOpen] = useState(false);
 
   // Category store for adding new categories, reordering, and deleting
   const addCategory = useCategoryStore((s) => s.addCategory);
@@ -92,8 +90,8 @@ export function EditTransactionSheet({
     }
   };
 
-  const handleAddCategory = async (name: string, type: CategoryType) => {
-    const newCategory = await addCategory({ name, type });
+  const handleAddCategory = async (name: string, type: CategoryType, icon?: string) => {
+    const newCategory = await addCategory({ name, type, icon });
     setSelectedCategory(newCategory);
   };
 
@@ -220,7 +218,6 @@ export function EditTransactionSheet({
             selectedCategory={selectedCategory}
             transactionType={transactionType}
             onSelect={setSelectedCategory}
-            onAddNew={() => setAddCategoryOpen(true)}
             onReorderCategories={(cats) => reorderCategories(transactionType, cats)}
             onAddCategory={handleAddCategory}
             onDeleteCategory={deleteCategory}
@@ -313,14 +310,6 @@ export function EditTransactionSheet({
             showSparkle={false}
           />
         </div>
-
-        {/* Add Category Modal */}
-        <AddCategoryModal
-          open={addCategoryOpen}
-          onOpenChange={setAddCategoryOpen}
-          categoryType={transactionType === 'income' ? 'income' : 'expense'}
-          onAdd={handleAddCategory}
-        />
       </SheetContent>
     </Sheet>
   );

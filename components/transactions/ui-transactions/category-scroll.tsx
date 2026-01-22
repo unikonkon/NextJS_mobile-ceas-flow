@@ -17,19 +17,21 @@ import {
   AlertTriangle,
   ToggleLeft,
   ToggleRight,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { Category, TransactionType, CategoryType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { defaultCategoryStyles } from '@/lib/constants/categories';
 
 interface CategoryScrollProps {
   categories: Category[];
   selectedCategory: Category | null;
   transactionType: TransactionType;
   onSelect: (category: Category) => void;
-  onAddNew: () => void;
   onReorderCategories?: (categories: Category[]) => void;
-  onAddCategory?: (name: string, type: CategoryType) => void;
+  onAddCategory?: (name: string, type: CategoryType, icon?: string) => void;
   onDeleteCategory?: (id: string) => void;
   label?: string;
 }
@@ -43,7 +45,6 @@ export function CategoryScroll({
   selectedCategory,
   transactionType,
   onSelect,
-  onAddNew,
   onReorderCategories,
   onAddCategory,
   onDeleteCategory,
@@ -74,6 +75,8 @@ export function CategoryScroll({
   // Add category form state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryIcon, setNewCategoryIcon] = useState<string | null>(null);
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   // Delete mode state
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -103,6 +106,8 @@ export function CategoryScroll({
       setHasChanges(false);
       setShowAddForm(false);
       setNewCategoryName('');
+      setNewCategoryIcon(null);
+      setShowIconPicker(false);
       setIsDeleteMode(false);
       setCategoryToDelete(null);
     }
@@ -320,11 +325,13 @@ export function CategoryScroll({
   const handleAddCategory = useCallback(() => {
     const trimmedName = newCategoryName.trim();
     if (trimmedName && onAddCategory) {
-      onAddCategory(trimmedName, transactionType as CategoryType);
+      onAddCategory(trimmedName, transactionType as CategoryType, newCategoryIcon || undefined);
       setNewCategoryName('');
+      setNewCategoryIcon(null);
+      setShowIconPicker(false);
       setShowAddForm(false);
     }
-  }, [newCategoryName, onAddCategory, transactionType]);
+  }, [newCategoryName, newCategoryIcon, onAddCategory, transactionType]);
 
   const handleSave = useCallback(() => {
     setOrderedCategories(localCategories);
@@ -495,28 +502,6 @@ export function CategoryScroll({
             );
           })}
 
-          {/* Add New Category */}
-          <button
-            onClick={onAddNew}
-            className={cn(
-              'group flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl min-w-[60px]',
-              'transition-all duration-200 hover:bg-accent/30 active:scale-95'
-            )}
-          >
-            <div
-              className={cn(
-                'flex size-10 items-center justify-center rounded-xl',
-                'border-2 border-dashed border-muted-foreground/30',
-                'transition-all duration-200',
-                'group-hover:border-primary/50 group-hover:bg-primary/5'
-              )}
-            >
-              <Plus className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
-            <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap group-hover:text-primary">
-              เพิ่มใหม่
-            </span>
-          </button>
         </div>
       </div>
 
@@ -776,8 +761,8 @@ export function CategoryScroll({
                       {/* Order Badge */}
                       <div
                         className={cn(
-                          'absolute -top-1.5 -left-1.5 size-5 rounded-full flex items-center justify-center',
-                          'text-[9px] font-bold shadow-sm',
+                          'absolute -top-1.5 -left-1.5 size-4 rounded-full flex items-center justify-center',
+                          'text-[10px] font-bold shadow-sm',
                           isVisible
                             ? transactionType === 'expense'
                               ? 'bg-expense text-white'
@@ -861,7 +846,7 @@ export function CategoryScroll({
             </div>
 
             {/* Add Category Section */}
-            <div className="px-3 py-2.5 border-t border-border/50 bg-muted/10">
+            <div className="px-3 py-2 border-t border-border/50 bg-muted/10">
               {showAddForm ? (
                 <div className="space-y-2 animate-in slide-in-from-bottom-2 duration-200">
                   <div className="flex items-center gap-1.5">
@@ -871,9 +856,49 @@ export function CategoryScroll({
                         transactionType === 'expense' ? 'text-expense' : 'text-income'
                       )}
                     />
-                    <span className="text-xs font-medium">เพิ่มหมวดหมู่ใหม่</span>
+                    <span className="text-xs font-medium">เพิ่มหมวดหมู่ใหม่ และเลือกไอคอน</span>
                   </div>
                   <div className="flex gap-2">
+                    {/* Icon Selector Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowIconPicker(!showIconPicker)}
+                      className={cn(
+                        'relative flex size-10 items-center justify-center rounded-xl shrink-0',
+                        'border-2 transition-all duration-200 cursor-pointer',
+                        'text-base group',
+                        'hover:scale-105 active:scale-95',
+                        showIconPicker
+                          ? transactionType === 'expense'
+                            ? 'border-expense bg-expense/10 shadow-sm shadow-expense/20'
+                            : 'border-income bg-income/10 shadow-sm shadow-income/20'
+                          : 'border-border hover:border-primary/50 bg-muted/50 hover:bg-muted'
+                      )}
+                      title="คลิกเพื่อเลือกไอคอน"
+                    >
+                      <span className="text-base">
+                        {newCategoryIcon || (newCategoryName ? newCategoryName.charAt(0).toUpperCase() : '📦')}
+                      </span>
+                      {/* Edit indicator */}
+                      <div className={cn(
+                        'absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full',
+                        'flex items-center justify-center',
+                        'border-2 border-background',
+                        'transition-all duration-200',
+                        showIconPicker
+                          ? transactionType === 'expense'
+                            ? 'bg-expense'
+                            : 'bg-income'
+                          : 'bg-primary/60 group-hover:bg-primary'
+                      )}>
+                        {showIconPicker ? (
+                          <ChevronUp className="size-2 text-white" />
+                        ) : (
+                          <ChevronDown className="size-2 text-white" />
+                        )}
+                      </div>
+                    </button>
+
                     <div className="relative flex-1">
                       <Input
                         ref={inputRef}
@@ -886,39 +911,29 @@ export function CategoryScroll({
                           if (e.key === 'Escape') {
                             setShowAddForm(false);
                             setNewCategoryName('');
+                            setNewCategoryIcon(null);
+                            setShowIconPicker(false);
                           }
                         }}
                         placeholder="ชื่อหมวดหมู่..."
                         className={cn(
-                          'h-10 rounded-xl border-2 pl-3 pr-10 text-sm',
+                          'h-10 rounded-xl border-2 pl-3 pr-3 text-sm',
                           transactionType === 'expense'
                             ? 'focus:border-expense'
                             : 'focus:border-income'
                         )}
                         maxLength={30}
                       />
-                      {newCategoryName && (
-                        <div
-                          className={cn(
-                            'absolute right-2.5 top-1/2 -translate-y-1/2',
-                            'flex size-6 items-center justify-center rounded-md',
-                            'text-[10px] font-bold',
-                            transactionType === 'expense'
-                              ? 'bg-expense/15 text-expense'
-                              : 'bg-income/15 text-income'
-                          )}
-                        >
-                          {newCategoryName.charAt(0).toUpperCase()}
-                        </div>
-                      )}
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive"
+                      className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive shrink-0"
                       onClick={() => {
                         setShowAddForm(false);
                         setNewCategoryName('');
+                        setNewCategoryIcon(null);
+                        setShowIconPicker(false);
                       }}
                     >
                       <X className="size-4" />
@@ -927,7 +942,7 @@ export function CategoryScroll({
                       disabled={!newCategoryName.trim()}
                       onClick={handleAddCategory}
                       className={cn(
-                        'h-10 w-10 rounded-xl text-white',
+                        'h-10 w-10 rounded-xl text-white shrink-0',
                         transactionType === 'expense'
                           ? 'bg-expense hover:bg-expense/90 disabled:bg-expense/40'
                           : 'bg-income hover:bg-income/90 disabled:bg-income/40'
@@ -936,6 +951,57 @@ export function CategoryScroll({
                       <Check className="size-4" />
                     </Button>
                   </div>
+
+                  {/* Icon Picker Grid */}
+                  {showIconPicker && (
+                    <div className={cn(
+                      'p-2 rounded-xl border border-border/50 bg-background/50',
+                      'max-h-[230px] overflow-y-auto',
+                      'animate-in slide-in-from-top-2 duration-200'
+                    )}>
+                      <div className="grid grid-cols-6 gap-1.5">
+                        {defaultCategoryStyles.map((item, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              setNewCategoryIcon(item.icon);
+                              setShowIconPicker(false);
+                            }}
+                            className={cn(
+                              'flex size-12 items-center justify-center rounded-lg text-2xl',
+                              'transition-all duration-150',
+                              'hover:scale-110 active:scale-95',
+                              newCategoryIcon === item.icon
+                                ? cn(
+                                    'ring-2 shadow-sm',
+                                    transactionType === 'expense'
+                                      ? 'bg-expense/20 ring-expense'
+                                      : 'bg-income/20 ring-income'
+                                  )
+                                : 'bg-muted/50 hover:bg-muted'
+                            )}
+                          >
+                            {item.icon}
+                          </button>
+                        ))}
+                      </div>
+                      {newCategoryIcon && (
+                        <button
+                          type="button"
+                          onClick={() => setNewCategoryIcon(null)}
+                          className={cn(
+                            'mt-2 w-full py-1.5 rounded-lg text-[10px] font-medium',
+                            'border border-dashed border-muted-foreground/30',
+                            'text-muted-foreground hover:text-foreground hover:border-foreground/50',
+                            'transition-colors duration-200'
+                          )}
+                        >
+                          ใช้ตัวอักษรแทน
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button

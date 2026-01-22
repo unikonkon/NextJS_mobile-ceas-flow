@@ -26,6 +26,7 @@ export interface StoredCategory {
   name: string;
   type: 'expense' | 'income';
   order?: number; // For sorting categories
+  icon?: string; // Custom icon selected by user
 }
 
 export interface StoredWallet {
@@ -65,6 +66,13 @@ export class AppDatabase extends Dexie {
       categories: 'id, type, order',
       wallets: 'id, bookId, type',
     });
+
+    // Version 3: Add icon field to categories for custom icons
+    this.version(3).stores({
+      transactions: 'id, bookId, walletId, categoryId, type, date, createdAt',
+      categories: 'id, type, order',
+      wallets: 'id, bookId, type',
+    });
   }
 }
 
@@ -99,6 +107,7 @@ export function toStoredCategory(c: Category, index?: number): StoredCategory {
     name: c.name,
     type: c.type,
     order: c.order ?? index ?? 0,
+    icon: c.icon,
   };
 }
 
@@ -108,6 +117,7 @@ export function fromStoredCategory(s: StoredCategory): Category {
     name: s.name,
     type: s.type,
     order: s.order ?? 0,
+    icon: s.icon,
   };
 }
 
