@@ -106,53 +106,61 @@ export function MonthPicker({
 
       {/* Expanded Month Grid */}
       {isExpanded && (
-        <div className="absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 animate-scale-in rounded-2xl border bg-popover p-4 shadow-lg">
-          {/* Year Navigation */}
-          <div className="mb-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handlePrevYear}
-              className="rounded-full"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <span className="font-semibold">{viewYear + 543}</span>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleNextYear}
-              className="rounded-full"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
+        <>
+          {/* Backdrop to close on outside click */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsExpanded(false)}
+          />
 
-          {/* Month Grid */}
-          <div className="grid grid-cols-3 gap-2">
-            {monthNames.map((month, index) => {
-              const isSelected = index === currentMonth && viewYear === currentYear;
-              const isDisabled = isMonthDisabled(index);
+          <div className="absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 animate-scale-in rounded-2xl border bg-popover p-4 shadow-lg">
+            {/* Year Navigation */}
+            <div className="mb-4 flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handlePrevYear}
+                className="rounded-full"
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <span className="font-semibold">{viewYear + 543}</span>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleNextYear}
+                className="rounded-full"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
 
-              return (
-                <button
-                  key={index}
-                  onClick={() => !isDisabled && handleMonthSelect(index)}
-                  disabled={isDisabled}
-                  className={cn(
-                    'rounded-lg px-2 py-2 text-sm font-medium transition-all',
-                    isSelected
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-accent',
-                    isDisabled && 'cursor-not-allowed opacity-40'
-                  )}
-                >
-                  {month}
-                </button>
-              );
-            })}
+            {/* Month Grid */}
+            <div className="grid grid-cols-3 gap-2">
+              {monthNames.map((month, index) => {
+                const isSelected = index === currentMonth && viewYear === currentYear;
+                const isDisabled = isMonthDisabled(index);
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => !isDisabled && handleMonthSelect(index)}
+                    disabled={isDisabled}
+                    className={cn(
+                      'rounded-lg px-2 py-2 text-sm font-medium transition-all',
+                      isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-accent',
+                      isDisabled && 'cursor-not-allowed opacity-40'
+                    )}
+                  >
+                    {month}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

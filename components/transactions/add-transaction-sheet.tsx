@@ -201,16 +201,7 @@ export function AddTransactionSheet({
                   </div>
 
                   {/* Main Amount Display */}
-                  <div className="flex items-baseline justify-end gap-0.5 mt-auto">
-                    {/* <span
-                      className={cn(
-                        "text-lg font-semibold transition-colors",
-                        transactionType === 'expense' && "text-expense/60",
-                        transactionType === 'income' && "text-income/60"
-                      )}
-                    >
-                      {currency}
-                    </span> */}
+                  <div className="flex items-end justify-end gap-0.5 mt-auto">
                     <span
                       className={cn(
                         "font-numbers text-2xl font-bold tracking-tight transition-all",
@@ -221,6 +212,14 @@ export function AddTransactionSheet({
                     >
                       {calculator.formatDisplay(calculator.displayValue)}
                     </span>
+                    {/* Blinking Cursor */}
+                    <span
+                      className={cn(
+                        "inline-block w-0.5 h-6 rounded-full animate-cursor-blink",
+                        transactionType === 'expense' ? "bg-expense" : "bg-income"
+                      )}
+                      style={{ marginBottom: '0.25rem' }}
+                    />
                   </div>
                 </div>
               </div>

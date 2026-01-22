@@ -257,6 +257,11 @@
   .pt-safe {
     padding-top: max(0.5rem, env(safe-area-inset-top));
   }
+
+  /* Cursor blink animation */
+  .animate-cursor-blink {
+    animation: cursor-blink 1s ease-in-out infinite;
+  }
 }
 
 /* Animation Keyframes */
@@ -318,6 +323,9 @@
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
+.animate-pulse-fast {
+  animation: pulse-fast 0.5s ease-in-out infinite;
+}
 /* Stagger Children Animation */
 .stagger-children > * {
   opacity: 0;
@@ -434,4 +442,14 @@
   border-radius: inherit;
   border: 2px solid var(--income);
   animation: success-ring 0.6s ease-out forwards;
+}
+
+/* Keyboard cursor blink animation */
+@keyframes cursor-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }

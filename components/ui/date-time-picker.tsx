@@ -207,6 +207,7 @@ interface CalendarGridProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   onMonthChange: (delta: number) => void;
+  onMonthYearSelect?: (year: number, month: number) => void;
 }
 
 function CalendarGrid({
@@ -215,7 +216,16 @@ function CalendarGrid({
   selectedDate,
   onSelectDate,
   onMonthChange,
+  onMonthYearSelect,
 }: CalendarGridProps) {
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState(year);
+
+  // Reset picker year when year changes
+  useEffect(() => {
+    setPickerYear(year);
+  }, [year]);
+
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const today = new Date();
@@ -238,25 +248,91 @@ function CalendarGrid({
     month === selectedDate.getMonth() &&
     year === selectedDate.getFullYear();
 
+  const handleMonthSelect = (selectedMonth: number) => {
+    if (onMonthYearSelect) {
+      onMonthYearSelect(pickerYear, selectedMonth);
+    }
+    setShowMonthPicker(false);
+  };
+
   return (
     <div className="space-y-3">
       {/* Month/Year Header */}
-      <div className="flex items-center justify-between px-1">
+      <div className="relative flex items-center justify-between px-1">
         <button
           onClick={() => onMonthChange(-1)}
           className="p-2 rounded-full hover:bg-muted/60 transition-colors active:scale-95"
         >
           <ChevronLeft className="size-5 text-muted-foreground" />
         </button>
-        <span className="text-sm font-semibold text-foreground">
+        <button
+          onClick={() => {
+            setPickerYear(year);
+            setShowMonthPicker(!showMonthPicker);
+          }}
+          className="text-sm font-semibold text-foreground px-3 py-1.5 rounded-lg hover:bg-muted/60 transition-colors active:scale-95"
+        >
           {THAI_MONTHS[month]} {year + 543}
-        </span>
+        </button>
         <button
           onClick={() => onMonthChange(1)}
           className="p-2 rounded-full hover:bg-muted/60 transition-colors active:scale-95"
         >
           <ChevronRight className="size-5 text-muted-foreground" />
         </button>
+
+        {/* Month/Year Picker Grid - Floating */}
+        {showMonthPicker && (
+          <>
+            {/* Backdrop to close on outside click */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowMonthPicker(false)}
+            />
+
+            {/* Floating picker */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 w-56 rounded-2xl bg-card border border-border/50 p-3 space-y-3 shadow-xl animate-in fade-in-0 zoom-in-95 duration-200">
+              {/* Year Navigation */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setPickerYear((prev) => prev - 1)}
+                  className="p-1.5 rounded-full hover:bg-muted/60 transition-colors active:scale-95"
+                >
+                  <ChevronLeft className="size-4 text-muted-foreground" />
+                </button>
+                <span className="text-sm font-semibold">{pickerYear + 543}</span>
+                <button
+                  onClick={() => setPickerYear((prev) => prev + 1)}
+                  className="p-1.5 rounded-full hover:bg-muted/60 transition-colors active:scale-95"
+                >
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </button>
+              </div>
+
+              {/* Month Grid */}
+              <div className="grid grid-cols-3 gap-1.5">
+                {THAI_MONTHS_SHORT.map((monthName, index) => {
+                  const isCurrentMonth = index === month && pickerYear === year;
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleMonthSelect(index)}
+                      className={cn(
+                        "rounded-lg px-2 py-2 text-xs font-medium transition-all active:scale-95",
+                        isCurrentMonth
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted/60 text-foreground"
+                      )}
+                    >
+                      {monthName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Weekday Headers */}
@@ -404,7 +480,7 @@ export function DateTimePicker({
   value,
   onChange,
   showTime = false,
-  className,
+  className: _className,
   triggerClassName,
   children,
 }: DateTimePickerProps) {
@@ -538,6 +614,10 @@ export function DateTimePicker({
                   selectedDate={tempDate}
                   onSelectDate={setTempDate}
                   onMonthChange={handleMonthChange}
+                  onMonthYearSelect={(y, m) => {
+                    setViewYear(y);
+                    setViewMonth(m);
+                  }}
                 />
               </>
             ) : (
@@ -594,8 +674,6 @@ interface DateNavigatorProps {
 }
 
 export function DateNavigator({ value, onChange, className }: DateNavigatorProps) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-
   const changeDate = (days: number) => {
     const newDate = new Date(value);
     newDate.setDate(newDate.getDate() + days);

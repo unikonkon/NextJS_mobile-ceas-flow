@@ -146,7 +146,7 @@ export function CategoryScroll({
 
     const rect = sourceElement.getBoundingClientRect();
     const ghost = sourceElement.cloneNode(true) as HTMLDivElement;
-    
+
     // Style the ghost element
     ghost.style.cssText = `
       position: fixed;
@@ -162,7 +162,7 @@ export function CategoryScroll({
       border-radius: 12px;
       transition: transform 0.1s ease-out;
     `;
-    
+
     document.body.appendChild(ghost);
     ghostRef.current = ghost;
 
@@ -176,12 +176,12 @@ export function CategoryScroll({
   // Update ghost position
   const updateGhostPosition = useCallback((touch: React.Touch) => {
     if (!ghostRef.current || !initialTouchOffset.current) return;
-    
+
     const element = ghostRef.current;
     const rect = element.getBoundingClientRect();
     const newX = touch.clientX - initialTouchOffset.current.x - rect.width / 2;
     const newY = touch.clientY - initialTouchOffset.current.y - rect.height / 2;
-    
+
     element.style.left = `${newX}px`;
     element.style.top = `${newY}px`;
   }, []);
@@ -279,13 +279,13 @@ export function CategoryScroll({
       newCategories.splice(dragOverIndex, 0, removed);
       setLocalCategories(newCategories);
       setHasChanges(true);
-      
+
       // Haptic feedback on drop
       if (navigator.vibrate) {
         navigator.vibrate(30);
       }
     }
-    
+
     // Cleanup
     removeGhostElement();
     setDraggedIndex(null);
@@ -698,7 +698,7 @@ export function CategoryScroll({
                   "animate-in fade-in duration-200"
                 )} />
               )}
-              
+
               <div ref={categoryGridRef} className="flex flex-wrap gap-2 content-start relative z-10">
                 {localCategories.map((category, index) => {
                   const isVisible = index < localVisibleCount;
@@ -744,10 +744,10 @@ export function CategoryScroll({
                         // Delete mode styling
                         isDeleteMode
                           ? cn(
-                              'cursor-pointer hover:border-destructive/50 hover:bg-destructive/5',
-                              'hover:shadow-lg hover:shadow-destructive/10',
-                              'animate-in fade-in duration-200'
-                            )
+                            'cursor-pointer hover:border-destructive/50 hover:bg-destructive/5',
+                            'hover:shadow-lg hover:shadow-destructive/10',
+                            'animate-in fade-in duration-200'
+                          )
                           : 'cursor-grab active:cursor-grabbing hover:shadow-md',
                         // Touch dragging - disable pointer events on all items except the source
                         !isDeleteMode && isTouchDragging && draggedIndex !== null && 'touch-none pointer-events-none',
@@ -827,11 +827,11 @@ export function CategoryScroll({
                           'transition-all duration-200',
                           isVisible
                             ? cn(
-                                'shadow-sm',
-                                transactionType === 'expense'
-                                  ? 'bg-expense/20 text-expense'
-                                  : 'bg-income/20 text-income'
-                              )
+                              'shadow-sm',
+                              transactionType === 'expense'
+                                ? 'bg-expense/20 text-expense'
+                                : 'bg-income/20 text-income'
+                            )
                             : 'bg-muted text-muted-foreground'
                         )}
                       >
@@ -966,7 +966,7 @@ export function CategoryScroll({
                   className="mx-6 w-full max-w-xs overflow-hidden rounded-3xl bg-card shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
                   onClick={(e) => e.stopPropagation()}
                 >
-                
+
                   <div className="p-5">
                     {/* Icon & Title */}
                     <div className="flex flex-col items-center text-center mb-4">
