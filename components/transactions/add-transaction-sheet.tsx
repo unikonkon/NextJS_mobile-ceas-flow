@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
@@ -57,9 +57,18 @@ export function AddTransactionSheet({
   // Get current categories based on type
   const currentCategories = transactionType === 'income' ? incomeCategories : expenseCategories;
 
+  // Auto-select first category when sheet opens or transaction type changes
+  useEffect(() => {
+    if (open && currentCategories.length > 0 && !selectedCategory) {
+      setSelectedCategory(currentCategories[0]);
+    }
+  }, [open, currentCategories, selectedCategory]);
+
   const handleTypeChange = (type: TransactionType) => {
     setTransactionType(type);
-    setSelectedCategory(null);
+    // Auto-select first category of new type
+    const newCategories = type === 'income' ? incomeCategories : expenseCategories;
+    setSelectedCategory(newCategories.length > 0 ? newCategories[0] : null);
   };
 
   const handleAddCategory = async (name: string, type: CategoryType, icon?: string) => {

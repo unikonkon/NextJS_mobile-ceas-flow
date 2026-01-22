@@ -23,7 +23,7 @@ import {
 import type { Category, TransactionType, CategoryType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { defaultCategoryStyles } from '@/lib/constants/categories';
+import { iconGroups } from '@/lib/constants/categories';
 
 interface CategoryScrollProps {
   categories: Category[];
@@ -77,6 +77,7 @@ export function CategoryScroll({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   // Delete mode state
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -108,6 +109,7 @@ export function CategoryScroll({
       setNewCategoryName('');
       setNewCategoryIcon(null);
       setShowIconPicker(false);
+      setExpandedGroup(null);
       setIsDeleteMode(false);
       setCategoryToDelete(null);
     }
@@ -450,7 +452,7 @@ export function CategoryScroll({
           'max-h-[160px] overflow-y-auto'
         )}
       >
-        <div className="flex flex-wrap gap-2 content-start">
+        <div className="flex flex-wrap gap-1 content-start justify-between">
           {displayCategories.map((category, index) => {
             const isSelected = category.id === selectedCategory?.id;
             return (
@@ -460,7 +462,7 @@ export function CategoryScroll({
                 onClick={() => onSelect(category)}
                 className={cn(
                   'group relative flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl',
-                  'transition-all duration-300 min-w-[60px]',
+                  'transition-all duration-300 w-[60px]',
                   'hover:bg-accent/50 active:scale-95',
                   isSelected &&
                   cn(
@@ -477,7 +479,7 @@ export function CategoryScroll({
               >
                 <div
                   className={cn(
-                    'flex size-10 items-center justify-center rounded-xl text-base font-semibold',
+                    'flex size-10 items-center justify-center rounded-xl text-3xl font-semibold',
                     'transition-all duration-200',
                     'bg-muted/50',
                     isSelected && cn(
@@ -684,7 +686,7 @@ export function CategoryScroll({
                 )} />
               )}
 
-              <div ref={categoryGridRef} className="flex flex-wrap gap-2 content-start relative z-10">
+              <div ref={categoryGridRef} className="flex flex-wrap gap-2 content-start relative z-10 justify-between">
                 {localCategories.map((category, index) => {
                   const isVisible = index < localVisibleCount;
                   const isDragging = draggedIndex === index;
@@ -808,7 +810,7 @@ export function CategoryScroll({
                       {/* Category Icon */}
                       <div
                         className={cn(
-                          'flex size-10 items-center justify-center rounded-xl text-base font-bold',
+                          'flex size-10 items-center justify-center rounded-xl text-3xl font-bold',
                           'transition-all duration-200',
                           isVisible
                             ? cn(
@@ -952,53 +954,156 @@ export function CategoryScroll({
                     </Button>
                   </div>
 
-                  {/* Icon Picker Grid */}
+                  {/* Icon Picker - Grouped */}
                   {showIconPicker && (
                     <div className={cn(
-                      'p-2 rounded-xl border border-border/50 bg-background/50',
-                      'max-h-[230px] overflow-y-auto',
-                      'animate-in slide-in-from-top-2 duration-200'
+                      'rounded-2xl border border-border/30 bg-linear-to-b from-background to-muted/20',
+                      'max-h-[280px] overflow-hidden',
+                      'animate-in slide-in-from-top-2 duration-300',
+                      'shadow-lg shadow-black/5'
                     )}>
-                      <div className="grid grid-cols-6 gap-1.5">
-                        {defaultCategoryStyles.map((item, index) => (
+                      {/* Group Tabs - Horizontal Scroll */}
+                      <div className="flex gap-1 p-2 overflow-x-auto scrollbar-hide border-b border-border/30 bg-muted/30">
+                        {iconGroups.map((group) => (
                           <button
-                            key={index}
+                            key={group.id}
                             type="button"
-                            onClick={() => {
-                              setNewCategoryIcon(item.icon);
-                              setShowIconPicker(false);
-                            }}
+                            onClick={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
                             className={cn(
-                              'flex size-12 items-center justify-center rounded-lg text-2xl',
-                              'transition-all duration-150',
-                              'hover:scale-110 active:scale-95',
-                              newCategoryIcon === item.icon
-                                ? cn(
-                                    'ring-2 shadow-sm',
-                                    transactionType === 'expense'
-                                      ? 'bg-expense/20 ring-expense'
-                                      : 'bg-income/20 ring-income'
-                                  )
-                                : 'bg-muted/50 hover:bg-muted'
+                              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0',
+                              'text-xs font-medium transition-all duration-200',
+                              'hover:scale-105 active:scale-95',
+                              expandedGroup === group.id
+                                ? 'text-white shadow-md'
+                                : 'bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background'
                             )}
+                            style={{
+                              backgroundColor: expandedGroup === group.id ? group.color : undefined,
+                              boxShadow: expandedGroup === group.id ? `0 4px 12px ${group.color}40` : undefined,
+                            }}
                           >
-                            {item.icon}
+                            <span className="text-sm">{group.emoji}</span>
+                            <span className={cn(
+                              'transition-all duration-200',
+                              expandedGroup === group.id ? 'max-w-[80px] opacity-100' : 'max-w-0 opacity-0 overflow-hidden'
+                            )}>
+                              {group.name}
+                            </span>
                           </button>
                         ))}
                       </div>
+
+                      {/* Icons Grid */}
+                      <div className="p-2 max-h-[200px] overflow-y-auto">
+                        {expandedGroup ? (
+                          // Show selected group's icons
+                          <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            {iconGroups
+                              .filter(g => g.id === expandedGroup)
+                              .map((group) => (
+                                <div key={group.id}>
+                                  <div className="grid grid-cols-6 gap-1.5">
+                                    {group.icons.map((icon, idx) => (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => {
+                                          setNewCategoryIcon(icon);
+                                          setShowIconPicker(false);
+                                          setExpandedGroup(null);
+                                        }}
+                                        className={cn(
+                                          'flex size-11 items-center justify-center rounded-xl text-3xl',
+                                          'transition-all duration-150',
+                                          'hover:scale-110 active:scale-95',
+                                          newCategoryIcon === icon
+                                            ? 'ring-2 shadow-md'
+                                            : 'bg-muted/40 hover:bg-muted'
+                                        )}
+                                        style={{
+                                          backgroundColor: newCategoryIcon === icon ? `${group.color}20` : undefined,
+                                          boxShadow: newCategoryIcon === icon ? `0 2px 8px ${group.color}30` : undefined,
+                                          // @ts-expect-error CSS custom property for ring color
+                                          '--tw-ring-color': newCategoryIcon === icon ? group.color : undefined,
+                                        }}
+                                      >
+                                        {icon}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        ) : (
+                          // Show all groups preview
+                          <div className="space-y-3">
+                            {iconGroups.map((group) => (
+                              <button
+                                key={group.id}
+                                type="button"
+                                onClick={() => setExpandedGroup(group.id)}
+                                className={cn(
+                                  'w-full flex items-center gap-3 p-2 rounded-xl',
+                                  'bg-muted/30 hover:bg-muted/50',
+                                  'transition-all duration-200',
+                                  'hover:scale-[1.01] active:scale-[0.99]',
+                                  'group'
+                                )}
+                              >
+                                {/* Group Icon */}
+                                <div
+                                  className="flex size-9 items-center justify-center rounded-lg text-lg shrink-0 shadow-sm"
+                                  style={{ backgroundColor: `${group.color}20` }}
+                                >
+                                  {group.emoji}
+                                </div>
+
+                                {/* Group Name & Preview Icons */}
+                                <div className="flex-1 flex items-center justify-between min-w-0">
+                                  <span className="text-xs font-medium text-foreground">{group.name}</span>
+                                  <div className="flex items-center gap-0.5">
+                                    {group.icons.slice(0, 5).map((icon, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="text-sm opacity-60 group-hover:opacity-100 transition-opacity"
+                                        style={{ animationDelay: `${idx * 30}ms` }}
+                                      >
+                                        {icon}
+                                      </span>
+                                    ))}
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      +{group.icons.length - 5}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Arrow */}
+                                <ChevronDown className="size-3.5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer */}
                       {newCategoryIcon && (
-                        <button
-                          type="button"
-                          onClick={() => setNewCategoryIcon(null)}
-                          className={cn(
-                            'mt-2 w-full py-1.5 rounded-lg text-[10px] font-medium',
-                            'border border-dashed border-muted-foreground/30',
-                            'text-muted-foreground hover:text-foreground hover:border-foreground/50',
-                            'transition-colors duration-200'
-                          )}
-                        >
-                          ใช้ตัวอักษรแทน
-                        </button>
+                        <div className="p-2 border-t border-border/30 bg-muted/20">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewCategoryIcon(null);
+                              setExpandedGroup(null);
+                            }}
+                            className={cn(
+                              'w-full py-2 rounded-lg text-xs font-medium',
+                              'border border-dashed border-muted-foreground/30',
+                              'text-muted-foreground hover:text-foreground hover:border-foreground/50',
+                              'transition-all duration-200 hover:bg-muted/30'
+                            )}
+                          >
+                            ล้างการเลือก • ใช้ตัวอักษรแทน
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
@@ -1042,17 +1147,17 @@ export function CategoryScroll({
                           <Trash2 className="size-7 text-destructive" />
                         </div>
                       </div>
-                      <h3 className="text-lg font-bold text-foreground mb-1">
-                        ลบหมวดหมู่?
-                      </h3>
                       <p className="text-sm text-muted-foreground">
                         คุณต้องการลบ
                       </p>
+                      <h3 className="text-lg font-bold text-foreground mb-1">
+                        ลบหมวดหมู่?
+                      </h3>
                     </div>
 
                     {/* Category Preview */}
                     <div className={cn(
-                      'flex items-center gap-3 p-3 rounded-2xl mb-4',
+                      'flex items-center gap-3 p-3 rounded-lg mb-4',
                       'bg-destructive/5 border-2 border-destructive/20'
                     )}>
                       <div className={cn(
@@ -1074,10 +1179,11 @@ export function CategoryScroll({
                     </div>
 
                     {/* Warning */}
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-4">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
                       <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-700 dark:text-amber-400">
-                        การลบหมวดหมู่นี้จะไม่สามารถกู้คืนได้
+                        การลบหมวดหมู่นี้จะไม่สามารถกู้คืนได้ <br />
+                        ข้อมูลจะถูกลบออกจากระบบ
                       </p>
                     </div>
 

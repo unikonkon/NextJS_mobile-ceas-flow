@@ -37,7 +37,7 @@ export function TransactionCard({
       {/* Category Initial */}
       <div
         className={cn(
-          'flex size-10 items-center justify-center rounded-xl bg-muted/60 text-lg font-medium',
+          'flex size-10 items-center justify-center rounded-xl bg-muted/60 text-3xl font-medium',
           isExpense && 'bg-expense/10 text-expense',
           isIncome && 'bg-income/10 text-income'
         )}

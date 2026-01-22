@@ -75,6 +75,21 @@ export default function RootLayout({
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
+        {/* Prevent native share menu on mobile */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            body {
+              -webkit-touch-callout: none;
+              -webkit-user-select: none;
+              user-select: none;
+            }
+            input, textarea {
+              -webkit-user-select: text;
+              user-select: text;
+            }
+          `
+        }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-mono antialiased dark`}
