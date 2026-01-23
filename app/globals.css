@@ -621,7 +621,8 @@ html.theme-neutral.dark {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground antialiased font-mono;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

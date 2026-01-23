@@ -49,13 +49,13 @@ const WALLET_TYPES: {
   description: string;
   color: string;
 }[] = [
-  { value: 'cash', label: 'เงินสด', icon: '💵', description: 'เงินสดในกระเป๋า', color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30' },
-  { value: 'daily_expense', label: 'เงินเดือน', icon: '💰', description: 'เงินเดือน/เงินเดือนที่จะใช้', color: 'from-red-500/20 to-red-600/10 border-red-500/30' },
-  { value: 'bank', label: 'บัญชีธนาคาร', icon: '🏦', description: 'บัญชีออมทรัพย์/กระแสรายวัน', color: 'from-blue-500/20 to-blue-600/10 border-blue-500/30' },
-  { value: 'credit_card', label: 'บัตรเครดิต', icon: '💳', description: 'บัตรเครดิต/บัตรเดบิต', color: 'from-purple-500/20 to-purple-600/10 border-purple-500/30' },
-  { value: 'e_wallet', label: 'E-Wallet', icon: '📱', description: 'กระเป๋าเงินออนไลน์', color: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30' },
-  { value: 'savings', label: 'เงินออม', icon: '🐷', description: 'บัญชีเงินออม/เงินฝากประจำ', color: 'from-amber-500/20 to-amber-600/10 border-amber-500/30' },
-];
+    { value: 'cash', label: 'เงินสด', icon: '💵', description: 'เงินสดในกระเป๋า', color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30' },
+    { value: 'daily_expense', label: 'เงินเดือน', icon: '💰', description: 'เงินเดือน/เงินเดือนที่จะใช้', color: 'from-red-500/20 to-red-600/10 border-red-500/30' },
+    { value: 'bank', label: 'บัญชีธนาคาร', icon: '🏦', description: 'บัญชีออมทรัพย์/กระแสรายวัน', color: 'from-blue-500/20 to-blue-600/10 border-blue-500/30' },
+    { value: 'credit_card', label: 'บัตรเครดิต', icon: '💳', description: 'บัตรเครดิต/บัตรเดบิต', color: 'from-purple-500/20 to-purple-600/10 border-purple-500/30' },
+    { value: 'e_wallet', label: 'E-Wallet', icon: '📱', description: 'กระเป๋าเงินออนไลน์', color: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30' },
+    { value: 'savings', label: 'เงินออม', icon: '🐷', description: 'บัญชีเงินออม/เงินฝากประจำ', color: 'from-amber-500/20 to-amber-600/10 border-amber-500/30' },
+  ];
 
 const getWalletTypeConfig = (type: WalletType) => {
   return WALLET_TYPES.find(t => t.value === type) || WALLET_TYPES[0];
@@ -560,22 +560,15 @@ function WalletDetailView({
             variant="ghost"
             size="icon-sm"
             onClick={onBack}
-            className="rounded-full"
+            className="rounded-sm bg-primary/10 hover:bg-primary/20"
           >
-            <ChevronLeft className="size-5" />
+            <ChevronLeft className="size-8" />
           </Button>
         }
         title={wallet.name}
         rightAction={
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onEditWallet}
-              className="rounded-full"
-            >
-              <Edit3 className="size-4" />
-            </Button>
+          <div className="flex items-center gap-1.5">
+
             <Button
               variant="ghost"
               size="icon-sm"
@@ -583,9 +576,9 @@ function WalletDetailView({
                 setDeleteTarget('wallet');
                 setShowDeleteConfirm(true);
               }}
-              className="rounded-full text-destructive hover:text-destructive"
+              className="rounded-sm bg-destructive/10 hover:bg-destructive/20 text-destructive hover:text-destructive"
             >
-              <Trash2 className="size-4" />
+              <Trash2 className="size-5" />
             </Button>
           </div>
         }
@@ -614,6 +607,14 @@ function WalletDetailView({
                 <h2 className="text-lg font-bold">{wallet.name}</h2>
                 <p className="text-sm text-muted-foreground">{typeConfig.label}</p>
               </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onEditWallet}
+                className="rounded-sm bg-primary/10 hover:bg-primary/20"
+              >
+                <Edit3 className="size-6" />
+              </Button>
             </div>
 
             {/* Balance */}
@@ -789,8 +790,8 @@ function WalletDetailView({
               {deleteTarget === 'wallet'
                 ? 'ลบกระเป๋าเงินนี้?'
                 : deleteTarget === 'all'
-                ? 'ลบรายการทั้งหมด?'
-                : `ลบ ${selectedIds.size} รายการ?`}
+                  ? 'ลบรายการทั้งหมด?'
+                  : `ลบ ${selectedIds.size} รายการ?`}
             </DialogTitle>
             <DialogDescription>
               {deleteTarget === 'wallet'
@@ -948,7 +949,7 @@ export function WalletsTab() {
           onDeleteWallet={handleDeleteWalletDirect}
           onEditWallet={() => handleEditWallet(selectedWallet)}
           onDeleteTransaction={deleteTransaction}
-          onEditTransaction={() => {}}
+          onEditTransaction={() => { }}
           onDeleteAllTransactions={handleDeleteAllTransactions}
         />
 
