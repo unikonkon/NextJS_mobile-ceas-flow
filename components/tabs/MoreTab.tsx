@@ -54,6 +54,8 @@ function ThemeOption({ theme, label, isSelected, onClick }: ThemeOptionProps) {
     cyan: 'linear-gradient(135deg, oklch(0.98 0.005 200) 0%, oklch(0.55 0.20 200) 100%)',
     sky: 'linear-gradient(135deg, oklch(0.98 0.006 220) 0%, oklch(0.52 0.18 220) 100%)',
     teal: 'linear-gradient(135deg, oklch(0.98 0.005 180) 0%, oklch(0.50 0.18 180) 100%)',
+    gray: 'linear-gradient(135deg, oklch(0.25 0.005 260) 0%, oklch(0.55 0.01 260) 100%)',
+    neutral: 'linear-gradient(135deg, oklch(0.22 0.003 80) 0%, oklch(0.50 0.01 80) 100%)',
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -105,12 +107,14 @@ function ThemeSelector() {
 
   const themes: { value: ThemeType; label: string }[] = [
     { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
     { value: 'zinc', label: 'Zinc' },
     { value: 'stone', label: 'Stone' },
     { value: 'cyan', label: 'Cyan' },
     { value: 'sky', label: 'Sky' },
     { value: 'teal', label: 'Teal' },
+    { value: 'dark', label: 'Dark' },
+    { value: 'gray', label: 'Gray' },
+    { value: 'neutral', label: 'Neutral' },
   ];
 
   return (

@@ -23,7 +23,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       'theme-stone',
       'theme-cyan',
       'theme-sky',
-      'theme-teal'
+      'theme-teal',
+      'theme-gray',
+      'theme-neutral'
     ];
     
     themeClasses.forEach(cls => html.classList.remove(cls));
@@ -50,7 +52,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       'theme-stone',
       'theme-cyan',
       'theme-sky',
-      'theme-teal'
+      'theme-teal',
+      'theme-gray',
+      'theme-neutral'
     ];
     
     themeClasses.forEach(cls => html.classList.remove(cls));

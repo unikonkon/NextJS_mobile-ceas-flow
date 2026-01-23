@@ -3,7 +3,7 @@ import { create } from 'zustand';
 // ============================================
 // Types
 // ============================================
-export type ThemeType = 'light' | 'dark' | 'zinc' | 'stone' | 'cyan' | 'sky' | 'teal';
+export type ThemeType = 'light' | 'dark' | 'zinc' | 'stone' | 'cyan' | 'sky' | 'teal' | 'gray' | 'neutral';
 
 const THEME_STORAGE_KEY = 'ceas-flow-theme';
 
@@ -16,7 +16,7 @@ function getStoredTheme(): ThemeType {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored) {
       const theme = JSON.parse(stored) as ThemeType;
-      if (['light', 'dark', 'zinc', 'stone', 'cyan', 'sky', 'teal'].includes(theme)) {
+      if (['light', 'dark', 'zinc', 'stone', 'cyan', 'sky', 'teal', 'gray', 'neutral'].includes(theme)) {
         return theme;
       }
     }
@@ -38,7 +38,9 @@ function applyThemeClass(theme: ThemeType) {
     'theme-stone',
     'theme-cyan',
     'theme-sky',
-    'theme-teal'
+    'theme-teal',
+    'theme-gray',
+    'theme-neutral'
   ];
   
   themeClasses.forEach(cls => html.classList.remove(cls));
