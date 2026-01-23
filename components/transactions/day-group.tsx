@@ -75,7 +75,7 @@ export function DayGroup({
   return (
     <div className={cn('animate-slide-up', className)}>
       {/* Day Header */}
-      <div className="sticky top-14 z-10 -mx-4 mb-2 bg-card px-4 py-2">
+      <div className="sticky top-12 z-10 -mx-4 mb-2 bg-card px-4 py-2">
         <div className="flex items-center justify-between">
           {/* Date Info */}
           <div className="flex items-baseline gap-2">

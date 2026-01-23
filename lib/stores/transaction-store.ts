@@ -38,18 +38,28 @@ function filterTransactionsByDay(
   return transactions.filter((t) => isSameDay(t.date, selectedDay));
 }
 
+function filterTransactionsByWallet(
+  transactions: TransactionWithCategory[],
+  walletId: string | null
+): TransactionWithCategory[] {
+  if (!walletId) return transactions; // null = All wallets
+  return transactions.filter((t) => t.walletId === walletId);
+}
+
 function computeDailySummaries(
   transactions: TransactionWithCategory[],
   selectedMonth?: Date,
-  selectedDay?: Date | null
+  selectedDay?: Date | null,
+  selectedWalletId?: string | null
 ): DailySummary[] {
-  // Filter by day if provided, otherwise by month
-  let filteredTransactions = transactions;
+  // Filter by wallet first
+  let filteredTransactions = filterTransactionsByWallet(transactions, selectedWalletId ?? null);
 
+  // Then filter by day if provided, otherwise by month
   if (selectedDay) {
-    filteredTransactions = filterTransactionsByDay(transactions, selectedDay);
+    filteredTransactions = filterTransactionsByDay(filteredTransactions, selectedDay);
   } else if (selectedMonth) {
-    filteredTransactions = filterTransactionsByMonth(transactions, selectedMonth);
+    filteredTransactions = filterTransactionsByMonth(filteredTransactions, selectedMonth);
   }
 
   const grouped = filteredTransactions.reduce((acc, transaction) => {
@@ -78,12 +88,16 @@ function computeDailySummaries(
 
 function computeMonthlySummary(
   transactions: TransactionWithCategory[],
-  selectedMonth: Date
+  selectedMonth: Date,
+  selectedWalletId?: string | null
 ) {
   const month = selectedMonth.getMonth();
   const year = selectedMonth.getFullYear();
 
-  const monthTransactions = transactions.filter((t) => {
+  // Filter by wallet first
+  const walletFiltered = filterTransactionsByWallet(transactions, selectedWalletId ?? null);
+
+  const monthTransactions = walletFiltered.filter((t) => {
     return t.date.getMonth() === month && t.date.getFullYear() === year;
   });
 
@@ -98,7 +112,40 @@ function computeMonthlySummary(
   return { income, expense, balance: income - expense };
 }
 
+// คำนวณยอดคงเหลือของแต่ละ wallet จาก transactions ทั้งหมด
+function computeWalletBalances(
+  transactions: TransactionWithCategory[]
+): Record<string, { income: number; expense: number; balance: number }> {
+  const balances: Record<string, { income: number; expense: number; balance: number }> = {};
+
+  transactions.forEach((t) => {
+    if (!balances[t.walletId]) {
+      balances[t.walletId] = { income: 0, expense: 0, balance: 0 };
+    }
+
+    if (t.type === 'income') {
+      balances[t.walletId].income += t.amount;
+    } else if (t.type === 'expense') {
+      balances[t.walletId].expense += t.amount;
+    }
+  });
+
+  // คำนวณ balance สำหรับแต่ละ wallet
+  Object.keys(balances).forEach((walletId) => {
+    balances[walletId].balance = balances[walletId].income - balances[walletId].expense;
+  });
+
+  return balances;
+}
+
 // ============================================
+// Wallet Balance Type
+export interface WalletBalance {
+  income: number;
+  expense: number;
+  balance: number;
+}
+
 // Store Interface
 // ============================================
 interface TransactionStore {
@@ -111,10 +158,12 @@ interface TransactionStore {
   // Computed (stored to avoid recalculation)
   dailySummaries: DailySummary[];
   monthlySummary: { income: number; expense: number; balance: number };
+  walletBalances: Record<string, WalletBalance>; // ยอดคงเหลือของแต่ละ wallet
 
   // UI State
   selectedMonth: Date;
   selectedDay: Date | null;
+  selectedWalletId: string | null; // null = All wallets
   toastVisible: boolean;
   toastType: TransactionType;
 
@@ -124,8 +173,10 @@ interface TransactionStore {
   updateTransaction: (id: string, input: Partial<TransactionInput>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   getTransactionById: (id: string) => TransactionWithCategory | undefined;
+  getWalletBalance: (walletId: string) => WalletBalance;
   setSelectedMonth: (date: Date) => void;
   setSelectedDay: (date: Date | null) => void;
+  setSelectedWalletId: (walletId: string | null) => void;
   hideToast: () => void;
 }
 
@@ -140,8 +191,10 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
   isInitialized: false,
   dailySummaries: [],
   monthlySummary: { income: 0, expense: 0, balance: 0 },
+  walletBalances: {}, // ยอดคงเหลือของแต่ละ wallet
   selectedMonth: new Date(),
   selectedDay: null,
+  selectedWalletId: null, // null = All wallets
   toastVisible: false,
   toastType: 'expense',
 
@@ -194,11 +247,12 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
           };
         });
 
-        const { selectedMonth, selectedDay } = get();
+        const { selectedMonth, selectedDay, selectedWalletId } = get();
         set({
           transactions: transactionsWithCategory,
-          dailySummaries: computeDailySummaries(transactionsWithCategory, selectedMonth, selectedDay),
-          monthlySummary: computeMonthlySummary(transactionsWithCategory, selectedMonth),
+          dailySummaries: computeDailySummaries(transactionsWithCategory, selectedMonth, selectedDay, selectedWalletId),
+          monthlySummary: computeMonthlySummary(transactionsWithCategory, selectedMonth, selectedWalletId),
+          walletBalances: computeWalletBalances(transactionsWithCategory),
           isLoading: false,
           isInitialized: true,
         });
@@ -213,11 +267,12 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
           } as TransactionWithCategory;
         }).filter((t) => t.category); // Filter out transactions with missing categories
 
-        const { selectedMonth, selectedDay } = get();
+        const { selectedMonth, selectedDay, selectedWalletId } = get();
         set({
           transactions,
-          dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay),
-          monthlySummary: computeMonthlySummary(transactions, selectedMonth),
+          dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay, selectedWalletId),
+          monthlySummary: computeMonthlySummary(transactions, selectedMonth, selectedWalletId),
+          walletBalances: computeWalletBalances(transactions),
           isLoading: false,
           isInitialized: true,
         });
@@ -250,13 +305,14 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
     // Update Zustand state immediately for fast UI
     const newTransactions = [newTransaction, ...get().transactions];
-    const { selectedMonth, selectedDay } = get();
+    const { selectedMonth, selectedDay, selectedWalletId } = get();
 
     set({
       transactions: newTransactions,
       newTransactionIds: [...get().newTransactionIds, newTransaction.id],
-      dailySummaries: computeDailySummaries(newTransactions, selectedMonth, selectedDay),
-      monthlySummary: computeMonthlySummary(newTransactions, selectedMonth),
+      dailySummaries: computeDailySummaries(newTransactions, selectedMonth, selectedDay, selectedWalletId),
+      monthlySummary: computeMonthlySummary(newTransactions, selectedMonth, selectedWalletId),
+      walletBalances: computeWalletBalances(newTransactions),
       toastVisible: true,
       toastType: input.type,
     });
@@ -323,12 +379,13 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
     const transactions = get().transactions.map((t) =>
       t.id === id ? updatedTransaction : t
     );
-    const { selectedMonth, selectedDay } = get();
+    const { selectedMonth, selectedDay, selectedWalletId } = get();
 
     set({
       transactions,
-      dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay),
-      monthlySummary: computeMonthlySummary(transactions, selectedMonth),
+      dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay, selectedWalletId),
+      monthlySummary: computeMonthlySummary(transactions, selectedMonth, selectedWalletId),
+      walletBalances: computeWalletBalances(transactions),
       toastVisible: true,
       toastType: updatedTransaction.type,
     });
@@ -361,13 +418,14 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
   deleteTransaction: async (id: string) => {
     const transactions = get().transactions.filter((t) => t.id !== id);
-    const { selectedMonth, selectedDay } = get();
+    const { selectedMonth, selectedDay, selectedWalletId } = get();
 
     // Update Zustand state immediately
     set({
       transactions,
-      dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay),
-      monthlySummary: computeMonthlySummary(transactions, selectedMonth),
+      dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay, selectedWalletId),
+      monthlySummary: computeMonthlySummary(transactions, selectedMonth, selectedWalletId),
+      walletBalances: computeWalletBalances(transactions),
     });
 
     // Delete from IndexedDB
@@ -382,23 +440,41 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
     return get().transactions.find((t) => t.id === id);
   },
 
+  getWalletBalance: (walletId: string) => {
+    const balances = get().walletBalances;
+    return balances[walletId] || { income: 0, expense: 0, balance: 0 };
+  },
+
   setSelectedMonth: (date) => {
     const transactions = get().transactions;
+    const selectedWalletId = get().selectedWalletId;
     // Clear day selection when month changes
     set({
       selectedMonth: date,
       selectedDay: null,
-      dailySummaries: computeDailySummaries(transactions, date, null),
-      monthlySummary: computeMonthlySummary(transactions, date),
+      dailySummaries: computeDailySummaries(transactions, date, null, selectedWalletId),
+      monthlySummary: computeMonthlySummary(transactions, date, selectedWalletId),
     });
   },
 
   setSelectedDay: (date) => {
     const transactions = get().transactions;
     const selectedMonth = get().selectedMonth;
+    const selectedWalletId = get().selectedWalletId;
     set({
       selectedDay: date,
-      dailySummaries: computeDailySummaries(transactions, selectedMonth, date),
+      dailySummaries: computeDailySummaries(transactions, selectedMonth, date, selectedWalletId),
+    });
+  },
+
+  setSelectedWalletId: (walletId) => {
+    const transactions = get().transactions;
+    const selectedMonth = get().selectedMonth;
+    const selectedDay = get().selectedDay;
+    set({
+      selectedWalletId: walletId,
+      dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay, walletId),
+      monthlySummary: computeMonthlySummary(transactions, selectedMonth, walletId),
     });
   },
 

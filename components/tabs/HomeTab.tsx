@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header, PageContainer } from '@/components/layout';
 import { SummaryBar, TransactionList, EditTransactionSheet } from '@/components/transactions';
-import { MonthPicker } from '@/components/common';
+import { MonthPicker, WalletSelector } from '@/components/common';
 import { Button } from '@/components/ui/button';
-import { Calendar, Search } from 'lucide-react';
-import { useTransactionStore, useCategoryStore } from '@/lib/stores';
+import { Calendar } from 'lucide-react';
+import { useTransactionStore, useCategoryStore, useWalletStore } from '@/lib/stores';
 import { TransactionWithCategory } from '@/types';
 
 export function HomeTab() {
@@ -14,14 +14,22 @@ export function HomeTab() {
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithCategory | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
 
-  // Store selectors
+  // Wallet store
+  const wallets = useWalletStore((s) => s.wallets);
+  const loadWallets = useWalletStore((s) => s.loadWallets);
+  const walletInitialized = useWalletStore((s) => s.isInitialized);
+
+  // Transaction store selectors
   const selectedMonth = useTransactionStore((s) => s.selectedMonth);
   const setSelectedMonth = useTransactionStore((s) => s.setSelectedMonth);
   const selectedDay = useTransactionStore((s) => s.selectedDay);
   const setSelectedDay = useTransactionStore((s) => s.setSelectedDay);
+  const selectedWalletId = useTransactionStore((s) => s.selectedWalletId);
+  const setSelectedWalletId = useTransactionStore((s) => s.setSelectedWalletId);
   const newTransactionIds = useTransactionStore((s) => s.newTransactionIds);
   const dailySummaries = useTransactionStore((s) => s.dailySummaries);
   const monthlySummary = useTransactionStore((s) => s.monthlySummary);
+  const walletBalances = useTransactionStore((s) => s.walletBalances);
   const toastVisible = useTransactionStore((s) => s.toastVisible);
   const toastType = useTransactionStore((s) => s.toastType);
   const getTransactionById = useTransactionStore((s) => s.getTransactionById);
@@ -31,6 +39,23 @@ export function HomeTab() {
   // Category store
   const expenseCategories = useCategoryStore((s) => s.expenseCategories);
   const incomeCategories = useCategoryStore((s) => s.incomeCategories);
+
+  // Load wallets on mount
+  useEffect(() => {
+    if (!walletInitialized) {
+      loadWallets();
+    }
+  }, [walletInitialized, loadWallets]);
+
+  // Get selected wallet info
+  const selectedWallet = selectedWalletId
+    ? wallets.find((w) => w.id === selectedWalletId)
+    : null;
+
+  // Get current wallet balance from transactions
+  const currentWalletBalance = selectedWalletId
+    ? walletBalances[selectedWalletId]?.balance || 0
+    : Object.values(walletBalances).reduce((sum, wb) => sum + wb.balance, 0);
 
   const handleTransactionClick = (id: string) => {
     const transaction = getTransactionById(id);
@@ -47,14 +72,9 @@ export function HomeTab() {
     }
   };
 
-  // console.log("newTransactionIds", newTransactionIds);
-  // console.log("dailySummaries", dailySummaries);
-
   return (
     <>
       <Header
-        showBookSelector
-        currentBook="บัญชีส่วนตัว"
         rightAction={
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon-sm" className="rounded-full">
@@ -62,11 +82,19 @@ export function HomeTab() {
             </Button>
           </div>
         }
+        leftAction={
+          <WalletSelector
+            wallets={wallets}
+            selectedWalletId={selectedWalletId}
+            walletBalances={walletBalances}
+            onSelect={setSelectedWalletId}
+          />
+        }
       />
 
       <PageContainer className="pt-4">
         {/* Month Picker */}
-        <div className="mb-4">
+        <div className="mb-2">
           <MonthPicker
             value={selectedMonth}
             onChange={setSelectedMonth}
@@ -75,11 +103,13 @@ export function HomeTab() {
           />
         </div>
 
-        {/* Summary */}
+        {/* Summary - Combined Wallet & Monthly Summary */}
         <SummaryBar
           income={monthlySummary.income}
           expense={monthlySummary.expense}
-          className="mb-6"
+          wallet={selectedWallet}
+          walletBalance={currentWalletBalance}
+          className="mb-3"
         />
 
         {/* Transaction List */}
@@ -116,7 +146,6 @@ export function HomeTab() {
               : 'bg-income/90 text-white'
             }`}
         >
-          {/* Changed from Sparkles to CheckCircle for success indication */}
           <svg
             className="size-5 text-white"
             fill="none"

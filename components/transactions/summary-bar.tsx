@@ -2,6 +2,8 @@
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
+import { TrendingUp, TrendingDown, Wallet as WalletIcon } from 'lucide-react';
+import { Wallet } from '@/types';
 
 interface SummaryBarProps {
   income: number;
@@ -9,6 +11,9 @@ interface SummaryBarProps {
   currency?: string;
   showBalance?: boolean;
   className?: string;
+  // Wallet props
+  wallet?: Wallet | null;
+  walletBalance?: number;
 }
 
 export function SummaryBar({
@@ -17,47 +22,117 @@ export function SummaryBar({
   currency = 'THB',
   showBalance = true,
   className,
+  wallet,
+  walletBalance,
 }: SummaryBarProps) {
-  const balance = income - expense;
+  const monthlyBalance = income - expense;
+  const displayBalance = walletBalance ?? monthlyBalance;
+
+  // Get wallet type label
+  const getWalletTypeLabel = (type: Wallet['type']) => {
+    switch (type) {
+      case 'cash': return 'เงินสด';
+      case 'bank': return 'บัญชีธนาคาร';
+      case 'credit_card': return 'บัตรเครดิต';
+      case 'e_wallet': return 'E-Wallet';
+      case 'savings': return 'บัญชีออมทรัพย์';
+      default: return 'บัญชี';
+    }
+  };
 
   return (
     <div
       className={cn(
-        'grid grid-cols-3 gap-2 rounded-2xl bg-card p-4 shadow-soft',
+        'relative overflow-hidden rounded-2xl bg-card border border-border/40 shadow-sm',
         className
       )}
     >
-      {/* Income */}
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-xs font-medium text-muted-foreground">รายรับ</span>
-        <span className="font-numbers text-base font-bold text-income">
-          +{formatCurrency(income, currency)}
-        </span>
-      </div>
+      {/* Background decoration */}
+      <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/5 blur-3xl" />
+      <div className="absolute -left-8 -bottom-8 size-32 rounded-full bg-primary/3 blur-2xl" />
 
-      {/* Expense */}
-      <div className="flex flex-col items-center gap-1 border-x border-border/50">
-        <span className="text-xs font-medium text-muted-foreground">รายจ่าย</span>
-        <span className="font-numbers text-base font-bold text-expense">
-          -{formatCurrency(expense, currency)}
-        </span>
-      </div>
-
-      {/* Balance */}
-      {showBalance && (
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs font-medium text-muted-foreground">คงเหลือ</span>
-          <span
-            className={cn(
-              'font-numbers text-base font-bold',
-              balance >= 0 ? 'text-income' : 'text-expense'
+      <div className="relative p-4">
+        {/* Header - Wallet info or default */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            {wallet ? (
+              <>
+                <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20">
+                  <span className="text-xl">{wallet.icon}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{wallet.name}</p>
+                  <p className="text-xs text-muted-foreground">{getWalletTypeLabel(wallet.type)}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20">
+                  <span className="text-xl">📊</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">ทุกบัญชี</p>
+                  <p className="text-xs text-muted-foreground">สรุปรวม</p>
+                </div>
+              </>
             )}
-          >
-            {balance >= 0 ? '+' : ''}
-            {formatCurrency(balance, currency)}
-          </span>
+          </div>
+
+          {/* Total Balance */}
+          {showBalance && (
+            <div className="text-right">
+              <div className="flex items-center gap-2">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-muted/50">
+                  <WalletIcon className="size-4 text-muted-foreground" />
+                </div>
+                <p className="text-xs text-muted-foreground mb-0.5">ยอดคงเหลือ</p>
+              </div>
+
+              <p
+                className={cn(
+                  'text-xl font-bold font-numbers tracking-tight',
+                  displayBalance >= 0 ? 'text-foreground' : 'text-expense'
+                )}
+              >
+                {displayBalance >= 0 ? '' : '-'}
+                {formatCurrency(Math.abs(displayBalance), currency)}
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Divider */}
+        <div className="border-t border-border/50 mb-1" />
+
+        {/* Income & Expense Row */}
+        <div className="flex items-center justify-between">
+          {/* Income */}
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-income/10">
+              <TrendingUp className="size-4 text-income" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">รายรับ</p>
+              <p className="font-numbers text-sm font-semibold text-income">
+                +{formatCurrency(income, currency)}
+              </p>
+            </div>
+          </div>
+
+          {/* Expense */}
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-expense/10">
+              <TrendingDown className="size-4 text-expense" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">รายจ่าย</p>
+              <p className="font-numbers text-sm font-semibold text-expense">
+                -{formatCurrency(expense, currency)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

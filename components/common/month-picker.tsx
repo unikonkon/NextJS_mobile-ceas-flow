@@ -205,7 +205,7 @@ export function MonthPicker({
             selectedDay && 'bg-primary/10 text-primary'
           )}
         >
-          <CalendarDays className="size-4" />
+          <CalendarDays className="size-5.5" />
           {selectedDay && (
             <span className="text-xs font-semibold">
               {selectedDay.getDate()}
