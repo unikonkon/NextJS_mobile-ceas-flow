@@ -27,10 +27,10 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className={cn(
-      'sticky top-0 z-40 w-full glass border-b border-border/50 pt-safe',
+      'sticky top-0 z-40 w-full bg-background border-b border-border/50 pt-safe',
       className
     )}>
-      <div className="flex h-14 items-center justify-between px-4">
+      <div className="flex h-10 items-center justify-between px-4 bg-background">
         {/* Left Section */}
         <div className="flex items-center gap-2">
           {leftAction}

@@ -64,7 +64,7 @@ export function GroupedTransactionCard({
         className={cn(
           'flex w-full items-center gap-3 px-3 py-2 text-left',
           'transition-all duration-200',
-          'hover:bg-accent/30 active:scale-[0.995]'
+          'hover:bg-accent/30 active:scale-[0.995] bg-card'
         )}
       >
         {/* Category Icon with Stack Indicator */}
@@ -149,7 +149,7 @@ export function GroupedTransactionCard({
             <span className="text-[10px] text-muted-foreground">รวม</span>
             <span
               className={cn(
-                'font-numbers text-lg font-bold tabular-nums',
+                'font-numbers text-base font-semibold tabular-nums',
                 'transition-all duration-200',
                 isExpense && 'text-expense',
                 isIncome && 'text-income'

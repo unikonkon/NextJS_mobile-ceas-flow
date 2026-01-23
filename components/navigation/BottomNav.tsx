@@ -57,7 +57,7 @@ const navItems: NavItem[] = [
         <path fillRule="evenodd" d="M12.75 3a.75.75 0 0 1 .75-.75 8.25 8.25 0 0 1 8.25 8.25.75.75 0 0 1-.75.75h-7.5a.75.75 0 0 1-.75-.75V3Z" clipRule="evenodd" />
       </svg>
     ),
-    label: 'การวิเคราะห์',
+    label: 'วิเคราะห์',
   },
   {
     id: 'more',
