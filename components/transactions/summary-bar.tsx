@@ -57,7 +57,7 @@ export function SummaryBar({
           <div className="flex items-center gap-3">
             {wallet ? (
               <>
-                <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-primary/15 to-primary/5 border border-primary/20">
                   <span className="text-xl">{wallet.icon}</span>
                 </div>
                 <div>
@@ -67,8 +67,17 @@ export function SummaryBar({
               </>
             ) : (
               <>
-                <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20">
-                  <span className="text-xl">📊</span>
+                <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-primary/15 to-primary/5 border border-primary/20">
+                  <svg
+                    className="size-6 text-primary"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect x="3" y="10" width="4" height="8" rx="1" fill="currentColor" opacity="0.7" />
+                    <rect x="9" y="6" width="4" height="12" rx="1" fill="currentColor" />
+                    <rect x="15" y="3" width="4" height="15" rx="1" fill="currentColor" opacity="0.7" />
+                  </svg>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">ทุกบัญชี</p>

@@ -181,6 +181,33 @@ interface TransactionStore {
 }
 
 // ============================================
+// localStorage key for persisting selectedWalletId
+// ============================================
+const SELECTED_WALLET_KEY = 'ceas-flow-selected-wallet-id';
+
+function getStoredWalletId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(SELECTED_WALLET_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredWalletId(walletId: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (walletId === null) {
+      localStorage.removeItem(SELECTED_WALLET_KEY);
+    } else {
+      localStorage.setItem(SELECTED_WALLET_KEY, walletId);
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+// ============================================
 // Create Store
 // ============================================
 export const useTransactionStore = create<TransactionStore>((set, get) => ({
@@ -194,7 +221,7 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
   walletBalances: {}, // ยอดคงเหลือของแต่ละ wallet
   selectedMonth: new Date(),
   selectedDay: null,
-  selectedWalletId: null, // null = All wallets
+  selectedWalletId: getStoredWalletId(), // โหลดค่าเริ่มต้นจาก localStorage
   toastVisible: false,
   toastType: 'expense',
 
@@ -471,6 +498,10 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
     const transactions = get().transactions;
     const selectedMonth = get().selectedMonth;
     const selectedDay = get().selectedDay;
+
+    // บันทึกค่าลง localStorage
+    setStoredWalletId(walletId);
+
     set({
       selectedWalletId: walletId,
       dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay, walletId),

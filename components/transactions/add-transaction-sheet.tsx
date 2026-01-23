@@ -5,10 +5,11 @@ import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
-import { Category, TransactionType, CategoryType } from '@/types';
+import { Category, TransactionType, CategoryType, Wallet as WalletType } from '@/types';
 import { formatNumber } from '@/lib/utils/format';
 // import { AddCategoryModal } from '@/components/categories';
-import { useCategoryStore } from '@/lib/stores';
+import { useCategoryStore, useTransactionStore, useWalletStore } from '@/lib/stores';
+import { WalletPickerModal } from './wallet-picker-modal';
 import {
   useCalculator,
   TypeSelector,
@@ -28,6 +29,7 @@ interface AddTransactionSheetProps {
     type: TransactionType;
     amount: number;
     categoryId: string;
+    walletId?: string;
     date?: Date;
     note?: string;
   }) => void;
@@ -45,11 +47,42 @@ export function AddTransactionSheet({
   const [note, setNote] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isNoteInputFocused, setIsNoteInputFocused] = useState(false);
+  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
 
   // Category store for adding new categories, reordering, and deleting
   const addCategory = useCategoryStore((s) => s.addCategory);
   const reorderCategories = useCategoryStore((s) => s.reorderCategories);
   const deleteCategory = useCategoryStore((s) => s.deleteCategory);
+
+  // Wallet stores - get selected wallet from transaction store
+  const wallets = useWalletStore((s) => s.wallets);
+  const walletBalances = useTransactionStore((s) => s.walletBalances);
+  const selectedWalletId = useTransactionStore((s) => s.selectedWalletId);
+  const setSelectedWalletId = useTransactionStore((s) => s.setSelectedWalletId);
+
+  // Local wallet selection for this transaction (synced from store)
+  const [localWalletId, setLocalWalletId] = useState<string | null>(null);
+
+  // Sync local wallet selection when sheet opens or store selection changes
+  useEffect(() => {
+    if (open) {
+      // When sheet opens, use store's selected wallet or first wallet
+      const walletId = selectedWalletId || (wallets.length > 0 ? wallets[0].id : null);
+      setLocalWalletId(walletId);
+    }
+  }, [open, selectedWalletId, wallets]);
+
+  // Get selected wallet object
+  const selectedWallet = localWalletId
+    ? wallets.find((w) => w.id === localWalletId)
+    : wallets[0];
+
+  // Handle wallet selection from picker
+  const handleWalletSelect = (walletId: string) => {
+    setLocalWalletId(walletId);
+    // Also update the global store selection
+    setSelectedWalletId(walletId);
+  };
 
   // Calculator hook
   const calculator = useCalculator();
@@ -92,6 +125,8 @@ export function AddTransactionSheet({
     setNote('');
     setSelectedDate(new Date());
     setIsNoteInputFocused(false);
+    // Reset to store's selected wallet
+    setLocalWalletId(selectedWalletId || (wallets.length > 0 ? wallets[0].id : null));
   };
 
   const handleSubmit = () => {
@@ -100,6 +135,7 @@ export function AddTransactionSheet({
         type: transactionType,
         amount: parseFloat(calculator.displayValue),
         categoryId: selectedCategory.id,
+        walletId: localWalletId || undefined,
         date: selectedDate,
         note: note || undefined,
       });
@@ -181,7 +217,7 @@ export function AddTransactionSheet({
               {/* Split Layout Container */}
               <div className="flex w-full">
                 {/* Left Half - Category Badge & Quick Actions */}
-                <div className="w-3/5 flex flex-col justify-between p-2 border-r border-border/30">
+                <div className="w-3/5 flex flex-col justify-between px-2 py-1 border-r border-border/30">
 
                   {/* Quick Actions Row */}
                   <div className="flex gap-1.5">
@@ -189,25 +225,28 @@ export function AddTransactionSheet({
                       value={selectedDate}
                       onChange={setSelectedDate}
                       triggerClassName={cn(
-                        "flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all",
+                        "flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all w-full justify-center shadow-sm",
                         "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground",
                         "active:scale-95"
                       )}
                     />
                     <button
+                      onClick={() => setWalletPickerOpen(true)}
                       className={cn(
-                        "flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all",
+                        "flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all w-full justify-center shadow-sm",
                         "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground",
                         "active:scale-95"
                       )}
                     >
                       <Wallet className="size-3" />
-                      <span>เงินสด</span>
+                      <span className="truncate">
+                        {selectedWallet?.name || 'เลือกบัญชี'}
+                      </span>
                     </button>
                   </div>
 
                   {/* Note Input - Compact */}
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 transition-all focus-within:bg-muted/50 focus-within:ring-1 focus-within:ring-primary/30">
+                  <div className="flex items-center gap-1.5 px-2 py-1 mt-1 rounded-lg bg-muted/30 transition-all focus-within:bg-muted/50 focus-within:ring-1 focus-within:ring-primary/30">
                     <FileText className="size-3 text-muted-foreground/60 shrink-0" />
                     <Input
                       value={note}
@@ -283,6 +322,16 @@ export function AddTransactionSheet({
           categoryType={transactionType}
           onAdd={handleAddCategory}
         /> */}
+
+        {/* Wallet Picker Modal */}
+        <WalletPickerModal
+          open={walletPickerOpen}
+          onOpenChange={setWalletPickerOpen}
+          wallets={wallets}
+          selectedWalletId={localWalletId}
+          walletBalances={walletBalances}
+          onSelect={handleWalletSelect}
+        />
       </SheetContent>
     </Sheet>
   );

@@ -91,7 +91,16 @@ export function WalletSelector({
         )}
       >
         <span className="text-lg">
-          {selectedWallet ? getWalletIcon(selectedWallet) : '📊'}
+          {selectedWallet ? getWalletIcon(selectedWallet) : <svg
+            className="size-6 text-primary"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="3" y="10" width="4" height="8" rx="1" fill="currentColor" opacity="0.7" />
+            <rect x="9" y="6" width="4" height="12" rx="1" fill="currentColor" />
+            <rect x="15" y="3" width="4" height="15" rx="1" fill="currentColor" opacity="0.7" />
+          </svg>}
         </span>
         <span className="max-w-[100px] truncate text-sm">
           {selectedWallet ? selectedWallet.name : 'ทั้งหมด'}
@@ -140,8 +149,17 @@ export function WalletSelector({
                 selectedWalletId === null && 'bg-primary/10 ring-1 ring-primary/30'
               )}
             >
-              <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
-                <span className="text-lg">📊</span>
+              <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-primary/20 to-primary/10 border border-primary/30">
+                <span className="text-lg"><svg
+                  className="size-6 text-primary"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect x="3" y="10" width="4" height="8" rx="1" fill="currentColor" opacity="0.7" />
+                  <rect x="9" y="6" width="4" height="12" rx="1" fill="currentColor" />
+                  <rect x="15" y="3" width="4" height="15" rx="1" fill="currentColor" opacity="0.7" />
+                </svg></span>
               </div>
               <div className="flex-1 text-left">
                 <p className="font-medium text-sm">ทั้งหมด</p>
@@ -183,7 +201,7 @@ export function WalletSelector({
                   <div
                     className={cn(
                       'flex size-10 items-center justify-center rounded-xl',
-                      'bg-gradient-to-br border',
+                      'bg-linear-to-br border',
                       getWalletColor(wallet.type)
                     )}
                   >
