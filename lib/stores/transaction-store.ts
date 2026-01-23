@@ -172,6 +172,7 @@ interface TransactionStore {
   addTransaction: (input: TransactionInput) => Promise<void>;
   updateTransaction: (id: string, input: Partial<TransactionInput>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  deleteTransactionsByWalletId: (walletId: string) => Promise<void>;
   getTransactionById: (id: string) => TransactionWithCategory | undefined;
   getWalletBalance: (walletId: string) => WalletBalance;
   setSelectedMonth: (date: Date) => void;
@@ -460,6 +461,27 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
       await db.transactions.delete(id);
     } catch (error) {
       console.error('Failed to delete transaction:', error);
+    }
+  },
+
+  deleteTransactionsByWalletId: async (walletId: string) => {
+    // Filter out transactions for the wallet
+    const transactions = get().transactions.filter((t) => t.walletId !== walletId);
+    const { selectedMonth, selectedDay, selectedWalletId } = get();
+
+    // Update Zustand state immediately
+    set({
+      transactions,
+      dailySummaries: computeDailySummaries(transactions, selectedMonth, selectedDay, selectedWalletId),
+      monthlySummary: computeMonthlySummary(transactions, selectedMonth, selectedWalletId),
+      walletBalances: computeWalletBalances(transactions),
+    });
+
+    // Bulk delete from IndexedDB using walletId index
+    try {
+      await db.transactions.where('walletId').equals(walletId).delete();
+    } catch (error) {
+      console.error('Failed to delete transactions by walletId:', error);
     }
   },
 

@@ -55,7 +55,7 @@ export interface CategorySummary {
 // ============================================
 // Wallet Types
 // ============================================
-export type WalletType = 'cash' | 'bank' | 'credit_card' | 'e_wallet' | 'savings';
+export type WalletType = 'cash' | 'bank' | 'credit_card' | 'e_wallet' | 'savings' | 'daily_expense';
 
 export interface Wallet {
   id: string;

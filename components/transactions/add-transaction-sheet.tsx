@@ -238,8 +238,8 @@ export function AddTransactionSheet({
                         "active:scale-95"
                       )}
                     >
-                      <Wallet className="size-3" />
-                      <span className="truncate">
+                      {selectedWallet?.icon || <Wallet className="size-3" />}
+                      <span className="pl-1 truncate max-w-[110px]">
                         {selectedWallet?.name || 'เลือกบัญชี'}
                       </span>
                     </button>

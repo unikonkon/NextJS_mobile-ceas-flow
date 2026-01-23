@@ -5,11 +5,11 @@ import { Wallet } from '@/types';
 import { WalletBalance } from '@/lib/stores/transaction-store';
 import { formatCurrency } from '@/lib/utils/format';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import {
   Wallet as WalletIcon,
   CreditCard,
@@ -49,15 +49,22 @@ export function WalletPickerModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden border-border/50">
-        <DialogHeader className="px-4 pt-4">
-          <DialogTitle className="text-base font-semibold text-center">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="min-h-[40vh] max-h-[65vh] rounded-t-[2rem] px-0 pb-0 overflow-hidden border-t-0"
+      >
+        <SheetHeader className="px-4 pt-4 pb-2">
+          {/* Handle bar */}
+          <div data-drag-handle className="flex justify-center pt-2 pb-2 touch-none">
+            <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
+          </div>
+          <SheetTitle className="text-base font-semibold text-center">
             เลือกกระเป๋าเงิน
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="px-3 pb-4 pt-3 space-y-1.5 max-h-[60vh] overflow-y-auto">
+        <div className="px-3 pb-6 pt-3 space-y-1.5 overflow-y-auto flex-1">
           {wallets.map((wallet) => {
             const isSelected = wallet.id === selectedWalletId;
             const balance = walletBalances[wallet.id]?.balance ?? 0;
@@ -90,14 +97,14 @@ export function WalletPickerModal({
                       : undefined
                   }
                 >
-                  {walletIconMap[wallet.icon] || <WalletIcon className="size-5" />}
+                  {wallet.icon || <WalletIcon className="size-5" />}
                 </div>
 
                 {/* Wallet Info */}
                 <div className="flex-1 text-left">
                   <p
                     className={cn(
-                      'font-medium text-sm',
+                      'font-medium text-sm truncate max-w-[280px]',
                       isSelected ? 'text-foreground' : 'text-foreground/80'
                     )}
                   >
@@ -123,7 +130,7 @@ export function WalletPickerModal({
             );
           })}
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

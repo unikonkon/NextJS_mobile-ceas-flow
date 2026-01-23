@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Transaction, Category, Wallet } from '@/types';
+import type { Transaction, Category, Wallet, WalletType } from '@/types';
 
 // ============================================
 // Database Schema
@@ -31,7 +31,7 @@ export interface StoredCategory {
 export interface StoredWallet {
   id: string;
   name: string;
-  type: 'cash' | 'bank' | 'credit_card' | 'e_wallet' | 'savings';
+  type: WalletType;
   icon: string;
   color: string;
   currency: string;
