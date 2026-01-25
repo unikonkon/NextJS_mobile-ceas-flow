@@ -8,6 +8,7 @@ import {
   expenseCategories,
   incomeCategories,
 } from '@/lib/constants/categories';
+import { mockTransactions as mockTransactionsFromFile } from '@/lib/mock/mockTransactions';
 
 // Mock Wallets
 export const mockWallets: Wallet[] = [
@@ -72,124 +73,59 @@ twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 const findExpense = (id: string) => expenseCategories.find((c) => c.id === id)!;
 const findIncome = (id: string) => incomeCategories.find((c) => c.id === id)!;
 
-// Mock Transactions
-export const mockTransactions: TransactionWithCategory[] = [
-  // Today
-  {
-    id: 't1',
-        walletId: 'w1',
-    categoryId: '1',
-    type: 'expense',
-    amount: 120,
-    currency: 'THB',
-    date: today,
-    note: 'มื้อเที่ยง',
-    category: findExpense('1'), // อาหาร
-    wallet: mockWallets[0],
-    createdAt: today,
-    updatedAt: today,
-  },
-  {
-    id: 't2',
-        walletId: 'w2',
-    categoryId: '3',
-    type: 'expense',
-    amount: 45,
-    currency: 'THB',
-    date: today,
-    note: 'BTS',
-    category: findExpense('3'), // เดินทาง
-    wallet: mockWallets[1],
-    createdAt: today,
-    updatedAt: today,
-  },
-  {
-    id: 't3',
-        walletId: 'w3',
-    categoryId: '11',
-    type: 'expense',
-    amount: 299,
-    currency: 'THB',
-    date: today,
-    note: '7-Eleven',
-    category: findExpense('11'), // ของใช้ส่วนตัว
-    wallet: mockWallets[2],
-    createdAt: today,
-    updatedAt: today,
-  },
-  // Yesterday
-  {
-    id: 't4',
-        walletId: 'w1',
-    categoryId: '1',
-    type: 'expense',
-    amount: 250,
-    currency: 'THB',
-    date: yesterday,
-    note: 'อาหารเย็นกับเพื่อน',
-    category: findExpense('1'), // อาหาร
-    wallet: mockWallets[0],
-    createdAt: yesterday,
-    updatedAt: yesterday,
-  },
-  {
-    id: 't5',
-        walletId: 'w2',
-    categoryId: '101',
-    type: 'income',
-    amount: 45000,
-    currency: 'THB',
-    date: yesterday,
-    note: 'เงินเดือนเดือน ม.ค.',
-    category: findIncome('101'), // เงินเดือน
-    wallet: mockWallets[1],
-    createdAt: yesterday,
-    updatedAt: yesterday,
-  },
-  {
-    id: 't6',
-        walletId: 'w4',
-    categoryId: '18',
-    type: 'expense',
-    amount: 590,
-    currency: 'THB',
-    date: yesterday,
-    note: 'Netflix & Spotify',
-    category: findExpense('18'), // Subscription
-    wallet: mockWallets[3],
-    createdAt: yesterday,
-    updatedAt: yesterday,
-  },
-  // Two days ago
-  {
-    id: 't7',
-        walletId: 'w1',
-    categoryId: '14',
-    type: 'expense',
-    amount: 850,
-    currency: 'THB',
-    date: twoDaysAgo,
-    note: 'ค่ายา',
-    category: findExpense('14'), // สุขภาพ/ยา
-    wallet: mockWallets[0],
-    createdAt: twoDaysAgo,
-    updatedAt: twoDaysAgo,
-  },
-  {
-    id: 't8',
-        walletId: 'w2',
-    categoryId: '6',
-    type: 'expense',
-    amount: 8500,
-    currency: 'THB',
-    date: twoDaysAgo,
-    note: 'ค่าเช่าห้อง',
-    category: findExpense('6'), // ค่าเช่า/ผ่อนบ้าน
-    wallet: mockWallets[1],
-    createdAt: twoDaysAgo,
-    updatedAt: twoDaysAgo,
-  },
-];
+// Helper function to ensure date is within 1 year range (1 year ago to today)
+const ensureDateInRange = (date: Date): Date => {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // End of today
+  const oneYearAgo = new Date(today);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  oneYearAgo.setHours(0, 0, 0, 0); // Start of one year ago
+  
+  // If date is before one year ago, set to one year ago
+  if (date.getTime() < oneYearAgo.getTime()) {
+    return new Date(oneYearAgo);
+  }
+  // If date is after today, set to today
+  if (date.getTime() > today.getTime()) {
+    return new Date(today);
+  }
+  return date;
+};
+
+// Generate mock transactions from mockTransactions.ts and merge with local data
+const generateAllMockTransactions = (): TransactionWithCategory[] => {
+  // Get transactions from mockTransactions.ts
+  const transactionsFromFile = mockTransactionsFromFile;
+  
+  // Map transactions to use correct wallet and category structure from data.ts
+  const mappedTransactions = transactionsFromFile.map((transaction) => {
+    // Find matching wallet from mockWallets
+    const wallet = mockWallets.find(w => w.id === transaction.walletId) || mockWallets[0];
+    
+    // Ensure date is within 1 year range (1 year ago to today)
+    const date = ensureDateInRange(transaction.date);
+    
+    // Find category from constants
+    const category = transaction.type === 'expense' 
+      ? findExpense(transaction.categoryId)
+      : findIncome(transaction.categoryId);
+    
+    return {
+      ...transaction,
+      wallet,
+      category: category || transaction.category,
+      date,
+      createdAt: date,
+      updatedAt: date,
+    };
+  });
+  
+  // Sort by date (newest first)
+  return mappedTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+};
+
+// Mock Transactions - combined from mockTransactions.ts with proper wallets and categories
+export const mockTransactions: TransactionWithCategory[] = generateAllMockTransactions();
 
 // Group transactions by day
 export const mockDailySummaries: DailySummary[] = [

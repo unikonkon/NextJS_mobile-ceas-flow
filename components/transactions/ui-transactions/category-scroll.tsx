@@ -58,10 +58,10 @@ export function CategoryScroll({
 
   // Settings modal state
   const [showSettings, setShowSettings] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(40);
+  const [visibleCount, setVisibleCount] = useState(12);
   const [orderedCategories, setOrderedCategories] = useState<Category[]>(categories);
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
-  const [localVisibleCount, setLocalVisibleCount] = useState(40);
+  const [localVisibleCount, setLocalVisibleCount] = useState(12);
   const [hasChanges, setHasChanges] = useState(false);
 
   // Drag state (for both mouse and touch)
