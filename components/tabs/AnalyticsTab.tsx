@@ -6,7 +6,7 @@ import { Doughnut } from 'react-chartjs-2';
 import { Header, PageContainer } from '@/components/layout';
 import { CurrencyDisplay } from '@/components/common';
 import { useTransactionStore, useCategoryStore } from '@/lib/stores';
-import { CategorySummary, TransactionWithCategory } from '@/types';
+import { CategorySummary, TransactionWithCategory, Category } from '@/types';
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,8 +16,17 @@ import {
   CalendarDays,
   Calendar,
   RotateCcw,
+  Receipt,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -527,14 +536,272 @@ function DonutChart({
   );
 }
 
-function CategoryList({ summaries }: { summaries: CategorySummary[] }) {
+// ============================================
+// Category Detail Sheet
+// ============================================
+interface GroupedTransactions {
+  date: Date;
+  dateKey: string;
+  transactions: TransactionWithCategory[];
+  totalAmount: number;
+}
+
+function formatDateThai(date: Date): string {
+  const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+  const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear() + 543}`;
+}
+
+function groupTransactionsByDate(transactions: TransactionWithCategory[]): GroupedTransactions[] {
+  const grouped = new Map<string, GroupedTransactions>();
+
+  transactions.forEach((t) => {
+    const dateKey = t.date.toISOString().split('T')[0];
+    const existing = grouped.get(dateKey);
+
+    if (existing) {
+      existing.transactions.push(t);
+      existing.totalAmount += t.amount;
+    } else {
+      grouped.set(dateKey, {
+        date: t.date,
+        dateKey,
+        transactions: [t],
+        totalAmount: t.amount,
+      });
+    }
+  });
+
+  return Array.from(grouped.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getTotalDaysInMonths(transactions: TransactionWithCategory[]): number {
+  if (transactions.length === 0) return 0;
+
+  // Get unique months from transactions
+  const monthSet = new Set<string>();
+  transactions.forEach((t) => {
+    const year = t.date.getFullYear();
+    const month = t.date.getMonth();
+    monthSet.add(`${year}-${month}`);
+  });
+
+  // Calculate total days in all months
+  let totalDays = 0;
+  monthSet.forEach((monthKey) => {
+    const [year, month] = monthKey.split('-').map(Number);
+    totalDays += getDaysInMonth(year, month);
+  });
+
+  return totalDays;
+}
+
+function CategoryDetailSheet({
+  isOpen,
+  onClose,
+  category,
+  transactions,
+  color,
+  totalAmount,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  category: Category;
+  transactions: TransactionWithCategory[];
+  color: string;
+  totalAmount: number;
+}) {
+  const groupedTransactions = useMemo(
+    () => groupTransactionsByDate(transactions),
+    [transactions]
+  );
+
+  const totalDaysInMonths = useMemo(
+    () => getTotalDaysInMonths(transactions),
+    [transactions]
+  );
+
+  return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl px-0">
+        {/* Drag Handle */}
+        <div className="flex justify-center pt-2 pb-3" data-drag-handle>
+          <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
+        </div>
+
+        <SheetHeader className="px-5 pb-4 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            {/* Category Icon */}
+            <div
+              className="size-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg"
+              style={{
+                backgroundColor: `${color}20`,
+                boxShadow: `0 4px 20px ${color}30`,
+              }}
+            >
+              {category.icon}
+            </div>
+            <div className="flex-1">
+              <SheetTitle className="text-xl">{category.name}</SheetTitle>
+              <SheetDescription className="flex items-center gap-2 mt-1">
+                <span>{transactions.length} รายการ</span>
+                <span className="text-muted-foreground/50">•</span>
+                <span style={{ color }}>
+                  ฿{totalAmount.toLocaleString()}
+                </span>
+              </SheetDescription>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="flex gap-2 mt-4 justify-center">
+            <div className="wbg-muted/30 rounded-xl p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">รายการ</p>
+              <p className="text-lg font-bold text-foreground">{transactions.length}</p>
+            </div>
+            <div className="bg-muted/30 rounded-xl p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">วัน</p>
+              <p className="text-lg font-bold text-foreground">{groupedTransactions.length}</p>
+            </div>
+            <div className="bg-muted/30 rounded-xl p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">เฉลี่ย/วัน จาก {totalDaysInMonths} วัน</p>
+              <p className="text-lg font-bold" style={{ color }}>
+                ฿{totalDaysInMonths > 0 ? Math.round(totalAmount / totalDaysInMonths).toLocaleString() : '0'}
+              </p>
+            </div>
+          </div>
+        </SheetHeader>
+
+        {/* Transaction List by Date */}
+        <div className="flex-1 overflow-y-auto px-4 space-y-4">
+          {groupedTransactions.map((group, groupIdx) => (
+            <div key={group.dateKey} className="space-y-2">
+              {/* Date Header */}
+              <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur-sm py-2 -mx-1 px-1 z-10">
+                <div className="flex items-center gap-2">
+                  <div className="size-2 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="text-sm font-medium text-foreground">
+                    {formatDateThai(group.date)}
+                  </span>
+                </div>
+                <span className="text-sm font-semibold" style={{ color }}>
+                  ฿{group.totalAmount.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Transactions */}
+              <div className="space-y-1.5 pl-4 border-l-2 ml-0.5" style={{ borderColor: `${color}30` }}>
+                {group.transactions.map((transaction, txIdx) => (
+                  <div
+                    key={transaction.id}
+                    className={cn(
+                      'flex items-center gap-3 p-3 rounded-xl',
+                      'bg-card border border-border/30',
+                      'transition-all duration-300 hover:bg-muted/30'
+                    )}
+                    style={{
+                      animationDelay: `${groupIdx * 50 + txIdx * 30}ms`,
+                    }}
+                  >
+                    {/* Transaction Icon */}
+                    <div className="size-9 rounded-lg bg-muted/50 flex items-center justify-center">
+                      {transaction.note ? (
+                        <FileText className="size-4 text-muted-foreground" />
+                      ) : (
+                        <Receipt className="size-4 text-muted-foreground" />
+                      )}
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {transaction.note || category.name}
+                        </p>
+                        <CurrencyDisplay
+                          amount={transaction.amount}
+                          size="sm"
+                          variant="expense"
+                          className="font-semibold shrink-0"
+                        />
+                      </div>
+                      {transaction.note && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          {category.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Empty State */}
+          {transactions.length === 0 && (
+            <div className="py-12 text-center">
+              <Receipt className="size-12 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground text-sm">ไม่มีรายการ</p>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Total */}
+        <div
+          className="border-t border-border/50 px-5 py-4"
+          style={{ backgroundColor: `${color}08` }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">รวมทั้งหมด</span>
+            <span className="text-xl font-bold" style={{ color }}>
+              ฿{totalAmount.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function CategoryList({
+  summaries,
+  transactions,
+}: {
+  summaries: CategorySummary[];
+  transactions: TransactionWithCategory[];
+}) {
   const [mounted, setMounted] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<{
+    category: Category;
+    color: string;
+    transactions: TransactionWithCategory[];
+    totalAmount: number;
+  } | null>(null);
 
   useEffect(() => {
     setMounted(false);
     const timer = setTimeout(() => setMounted(true), 50);
     return () => clearTimeout(timer);
   }, [summaries]);
+
+  const handleCategoryClick = useCallback(
+    (summary: CategorySummary, index: number) => {
+      const categoryTransactions = transactions.filter(
+        (t) => t.categoryId === summary.category.id && t.type === 'expense'
+      );
+      setSelectedCategory({
+        category: summary.category,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+        transactions: categoryTransactions,
+        totalAmount: summary.amount,
+      });
+    },
+    [transactions]
+  );
 
   if (summaries.length === 0) {
     return (
@@ -546,52 +813,72 @@ function CategoryList({ summaries }: { summaries: CategorySummary[] }) {
   }
 
   return (
-    <div className="space-y-2">
-      {summaries.map((summary, index) => (
-        <div
-          key={summary.category.id}
-          className={cn(
-            'relative overflow-hidden rounded-2xl bg-card border border-border/50',
-            'transition-all duration-500',
-            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
-          )}
-          style={{ transitionDelay: mounted ? `${index * 40}ms` : '0ms' }}
-        >
-          <div
-            className="absolute inset-0 opacity-[0.08] transition-all duration-500"
+    <>
+      <div className="space-y-2">
+        {summaries.map((summary, index) => (
+          <button
+            key={summary.category.id}
+            onClick={() => handleCategoryClick(summary, index)}
+            className={cn(
+              'relative w-full overflow-hidden rounded-2xl bg-card border border-border/50',
+              'transition-all duration-500 text-left',
+              'hover:scale-[1.01] hover:shadow-lg active:scale-[0.99]',
+              mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
+            )}
             style={{
-              background: `linear-gradient(90deg, ${CHART_COLORS[index % CHART_COLORS.length]} ${summary.percentage}%, transparent ${summary.percentage}%)`,
+              transitionDelay: mounted ? `${index * 40}ms` : '0ms',
             }}
-          />
-          <div className="relative flex items-center gap-3 p-3.5">
+          >
             <div
-              className="shrink-0 size-11 rounded-xl flex items-center justify-center text-xl"
-              style={{ backgroundColor: `${CHART_COLORS[index % CHART_COLORS.length]}20` }}
-            >
-              {summary.category.icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-medium text-foreground truncate">{summary.category.name}</p>
-                <CurrencyDisplay amount={summary.amount} size="sm" variant="default" className="font-semibold" />
+              className="absolute inset-0 opacity-[0.08] transition-all duration-500"
+              style={{
+                background: `linear-gradient(90deg, ${CHART_COLORS[index % CHART_COLORS.length]} ${summary.percentage}%, transparent ${summary.percentage}%)`,
+              }}
+            />
+            <div className="relative flex items-center gap-3 p-3.5">
+              <div
+                className="shrink-0 size-11 rounded-xl flex items-center justify-center text-xl"
+                style={{ backgroundColor: `${CHART_COLORS[index % CHART_COLORS.length]}20` }}
+              >
+                {summary.category.icon}
               </div>
-              <div className="flex items-center justify-between mt-1.5">
-                <span className="text-xs text-muted-foreground">{summary.transactionCount} รายการ</span>
-                <span
-                  className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: `${CHART_COLORS[index % CHART_COLORS.length]}15`,
-                    color: CHART_COLORS[index % CHART_COLORS.length],
-                  }}
-                >
-                  {summary.percentage.toFixed(1)}%
-                </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-medium text-foreground truncate">{summary.category.name}</p>
+                  <CurrencyDisplay amount={summary.amount} size="sm" variant="default" className="font-semibold" />
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-xs text-muted-foreground">{summary.transactionCount} รายการ</span>
+                  <span
+                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: `${CHART_COLORS[index % CHART_COLORS.length]}15`,
+                      color: CHART_COLORS[index % CHART_COLORS.length],
+                    }}
+                  >
+                    {summary.percentage.toFixed(1)}%
+                  </span>
+                </div>
               </div>
+              {/* Chevron indicator */}
+              <ChevronRight className="size-4 text-muted-foreground/50 shrink-0" />
             </div>
-          </div>
-        </div>
-      ))}
-    </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Category Detail Sheet */}
+      {selectedCategory && (
+        <CategoryDetailSheet
+          isOpen={!!selectedCategory}
+          onClose={() => setSelectedCategory(null)}
+          category={selectedCategory.category}
+          transactions={selectedCategory.transactions}
+          color={selectedCategory.color}
+          totalAmount={selectedCategory.totalAmount}
+        />
+      )}
+    </>
   );
 }
 
@@ -908,7 +1195,7 @@ export function AnalyticsTab() {
             <h3 className="font-semibold text-foreground">รายละเอียดหมวดหมู่</h3>
             <span className="text-xs text-muted-foreground">{expenseSummaries.length} หมวดหมู่</span>
           </div>
-          <CategoryList summaries={expenseSummaries} />
+          <CategoryList summaries={expenseSummaries} transactions={filteredTransactions} />
         </div>
       </PageContainer>
     </>
