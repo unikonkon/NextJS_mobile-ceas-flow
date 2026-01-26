@@ -578,7 +578,7 @@ function WalletDetailView({
               }}
               className="rounded-sm bg-destructive/10 hover:bg-destructive/20 text-destructive hover:text-destructive"
             >
-              <Trash2 className="size-5" />
+              <Trash2 className="size-4" />
             </Button>
           </div>
         }
@@ -597,7 +597,7 @@ function WalletDetailView({
           <div className="relative p-5">
             <div className="flex items-center gap-4 mb-4">
               <div className={cn(
-                'flex size-16 items-center justify-center rounded-2xl text-4xl',
+                'flex size-16 items-center justify-center rounded-xl text-4xl',
                 'bg-linear-to-br shadow-lg',
                 typeConfig.color
               )}>
@@ -613,7 +613,7 @@ function WalletDetailView({
                 onClick={onEditWallet}
                 className="rounded-sm bg-primary/10 hover:bg-primary/20"
               >
-                <Edit3 className="size-6" />
+                <Edit3 className="size-4" />
               </Button>
             </div>
 

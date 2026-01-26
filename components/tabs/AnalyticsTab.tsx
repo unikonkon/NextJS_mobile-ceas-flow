@@ -19,6 +19,9 @@ import {
   Receipt,
   FileText,
   Wallet as WalletIcon,
+  TrendingDown,
+  TrendingUp,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -36,6 +39,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 // Types
 // ============================================
 type FilterMode = 'monthly' | 'yearly';
+type ChartViewMode = 'expense' | 'income' | 'all';
 
 interface MonthSelection {
   month: number;
@@ -86,9 +90,11 @@ function filterByYear(
 
 function computeCategorySummaries(
   transactions: TransactionWithCategory[],
-  type: 'expense' | 'income'
+  type: 'expense' | 'income' | 'all'
 ): CategorySummary[] {
-  const filtered = transactions.filter((t) => t.type === type);
+  const filtered = type === 'all'
+    ? transactions
+    : transactions.filter((t) => t.type === type);
   const total = filtered.reduce((sum, t) => sum + t.amount, 0);
 
   const categoryMap = new Map<string, CategorySummary>();
@@ -168,6 +174,188 @@ function FilterModeToggle({
         <Calendar className="size-4" />
         <span>รายปี</span>
       </button>
+    </div>
+  );
+}
+
+// Chart view mode configuration
+const CHART_VIEW_MODES: {
+  mode: ChartViewMode;
+  label: string;
+  shortLabel: string;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+}[] = [
+    {
+      mode: 'expense',
+      label: 'รายจ่ายตามหมวดหมู่',
+      shortLabel: 'รายจ่าย',
+      icon: <TrendingDown className="size-4" />,
+      color: 'text-rose-500',
+      bgColor: 'bg-rose-500/10',
+    },
+    {
+      mode: 'income',
+      label: 'รายรับตามหมวดหมู่',
+      shortLabel: 'รายรับ',
+      icon: <TrendingUp className="size-4" />,
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10',
+    },
+    {
+      mode: 'all',
+      label: 'รวมทั้งหมดตามหมวดหมู่',
+      shortLabel: 'รวมทั้งหมด',
+      icon: <Layers className="size-4" />,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+    },
+  ];
+
+function ChartViewModeSelector({
+  mode,
+  onModeChange,
+  expenseTotal,
+  incomeTotal,
+  allTotal,
+}: {
+  mode: ChartViewMode;
+  onModeChange: (mode: ChartViewMode) => void;
+  expenseTotal: number;
+  incomeTotal: number;
+  allTotal: number;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const currentMode = CHART_VIEW_MODES.find((m) => m.mode === mode)!;
+
+  const getTotalForMode = (viewMode: ChartViewMode) => {
+    switch (viewMode) {
+      case 'expense':
+        return expenseTotal;
+      case 'income':
+        return incomeTotal;
+      case 'all':
+        return allTotal;
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Current Selection Button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={cn(
+          'w-full flex items-center justify-between gap-3 px-4 py-1 rounded-xl',
+          'bg-linear-to-r from-card via-card to-muted/30',
+          'border border-border/50',
+          'transition-all duration-300 hover:shadow-md',
+          isExpanded && 'ring-2 ring-primary/20'
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'size-10 rounded-xl flex items-center justify-center',
+              'transition-all duration-300',
+              currentMode.bgColor,
+              currentMode.color
+            )}
+          >
+            {currentMode.icon}
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-foreground">
+              {currentMode.label}
+            </p>
+            <p className={cn('text-xs font-medium', currentMode.color)}>
+              ฿{getTotalForMode(mode).toLocaleString()}
+            </p>
+          </div>
+        </div>
+        <ChevronDown
+          className={cn(
+            'size-5 text-muted-foreground transition-transform duration-300',
+            isExpanded && 'rotate-180'
+          )}
+        />
+      </button>
+
+      {/* Expanded Options */}
+      <div
+        className={cn(
+          'grid transition-all duration-300 ease-out overflow-hidden',
+          isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="flex gap-2 p-1 bg-muted/30 rounded-2xl">
+            {CHART_VIEW_MODES.map((viewMode, index) => {
+              const isActive = mode === viewMode.mode;
+              const total = getTotalForMode(viewMode.mode);
+
+              return (
+                <button
+                  key={viewMode.mode}
+                  onClick={() => {
+                    onModeChange(viewMode.mode);
+                    setIsExpanded(false);
+                  }}
+                  className={cn(
+                    'flex-1 flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl',
+                    'transition-all duration-300',
+                    isActive
+                      ? 'bg-card shadow-md scale-[1.02]'
+                      : 'hover:bg-card/50 active:scale-95'
+                  )}
+                  style={{
+                    transitionDelay: isExpanded ? `${index * 50}ms` : '0ms',
+                  }}
+                >
+                  <div
+                    className={cn(
+                      'size-9 rounded-lg flex items-center justify-center',
+                      'transition-all duration-300',
+                      isActive ? viewMode.bgColor : 'bg-muted/50',
+                      isActive ? viewMode.color : 'text-muted-foreground'
+                    )}
+                  >
+                    {viewMode.icon}
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs font-medium transition-colors duration-300',
+                      isActive ? 'text-foreground' : 'text-muted-foreground'
+                    )}
+                  >
+                    {viewMode.shortLabel}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-[10px] font-semibold transition-colors duration-300',
+                      isActive ? viewMode.color : 'text-muted-foreground/70'
+                    )}
+                  >
+                    ฿{total.toLocaleString()}
+                  </span>
+                  {isActive && (
+                    <div
+                      className={cn(
+                        'absolute -top-1 -right-1 size-4 rounded-full',
+                        'flex items-center justify-center',
+                        'bg-primary shadow-lg'
+                      )}
+                    >
+                      <Check className="size-2.5 text-primary-foreground" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -368,12 +556,16 @@ function DonutChart({
   totalAmount,
   centerLabel,
   chartKey,
+  viewMode = 'expense',
 }: {
   summaries: CategorySummary[];
   totalAmount: number;
   centerLabel: string;
   chartKey: string;
+  viewMode?: ChartViewMode;
 }) {
+  // Get variant based on view mode
+  const currencyVariant = viewMode === 'income' ? 'income' : viewMode === 'all' ? 'default' : 'expense';
   const [isVisible, setIsVisible] = useState(false);
   const [isSmallCategoriesExpanded, setIsSmallCategoriesExpanded] = useState(false);
 
@@ -562,7 +754,7 @@ function DonutChart({
           <CurrencyDisplay
             amount={totalAmount}
             size="lg"
-            variant="expense"
+            variant={currencyVariant}
             className="text-xl! font-bold"
           />
           <span className="text-[10px] text-muted-foreground mt-0.5">
@@ -598,7 +790,7 @@ function DonutChart({
           <div
             className={cn(
               'grid transition-all duration-100 ease-in-out overflow-hidden',
-              isSmallCategoriesExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+              isSmallCategoriesExpanded ? 'grid-rows-[1fr] opacity-100 pb-2' : 'grid-rows-[0fr] opacity-0'
             )}
           >
             <div className="flex flex-wrap justify-center gap-1.5 min-h-0">
@@ -606,7 +798,7 @@ function DonutChart({
                 <div
                   key={item.summary.category.id}
                   className={cn(
-                    'flex items-center gap-1 px-2 py-1 rounded-lg shrink-0',
+                    'flex items-center gap-1 px-2 py-1 rounded-md shrink-0',
                     'bg-muted/30 border border-border/20',
                     'transition-all duration-100 hover:bg-muted/50',
                     isVisible && isSmallCategoriesExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
@@ -699,6 +891,7 @@ function CategoryDetailSheet({
   transactions,
   color,
   totalAmount,
+  viewMode = 'expense',
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -706,6 +899,7 @@ function CategoryDetailSheet({
   transactions: TransactionWithCategory[];
   color: string;
   totalAmount: number;
+  viewMode?: ChartViewMode;
 }) {
   const groupedTransactions = useMemo(
     () => groupTransactionsByDate(transactions),
@@ -716,6 +910,15 @@ function CategoryDetailSheet({
     () => getTotalDaysInMonths(transactions),
     [transactions]
   );
+
+  // Get currency variant based on view mode
+  const getCurrencyVariant = (txType: 'expense' | 'income') => {
+    if (viewMode === 'all') return txType;
+    return viewMode;
+  };
+
+  // Get view mode label
+  const viewModeLabel = viewMode === 'expense' ? 'รายจ่าย' : viewMode === 'income' ? 'รายรับ' : 'รวม';
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -743,7 +946,21 @@ function CategoryDetailSheet({
                 <span style={{ color }}>
                   ฿{totalAmount.toLocaleString()}
                 </span>
-                <span className="text-muted-foreground pl-4">เดือน {getFullMonthName(transactions[0].date.getMonth())}</span>
+                <span
+                  className={cn(
+                    'ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium',
+                    viewMode === 'expense' && 'bg-rose-500/10 text-rose-500',
+                    viewMode === 'income' && 'bg-emerald-500/10 text-emerald-500',
+                    viewMode === 'all' && 'bg-blue-500/10 text-blue-500'
+                  )}
+                >
+                  {viewModeLabel}
+                </span>
+                {transactions.length > 0 && (
+                  <span className="text-muted-foreground pl-2">
+                    เดือน {getFullMonthName(transactions[0].date.getMonth())}
+                  </span>
+                )}
               </SheetDescription>
             </div>
           </div>
@@ -816,7 +1033,7 @@ function CategoryDetailSheet({
                         <CurrencyDisplay
                           amount={transaction.amount}
                           size="sm"
-                          variant="expense"
+                          variant={getCurrencyVariant(transaction.type)}
                           className="font-semibold shrink-0"
                         />
                       </div>
@@ -849,9 +1066,11 @@ function CategoryDetailSheet({
 function CategoryList({
   summaries,
   transactions,
+  viewMode,
 }: {
   summaries: CategorySummary[];
   transactions: TransactionWithCategory[];
+  viewMode: ChartViewMode;
 }) {
   const [mounted, setMounted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<{
@@ -869,9 +1088,11 @@ function CategoryList({
 
   const handleCategoryClick = useCallback(
     (summary: CategorySummary, index: number) => {
-      const categoryTransactions = transactions.filter(
-        (t) => t.categoryId === summary.category.id && t.type === 'expense'
-      );
+      const categoryTransactions = transactions.filter((t) => {
+        const matchesCategory = t.categoryId === summary.category.id;
+        if (viewMode === 'all') return matchesCategory;
+        return matchesCategory && t.type === viewMode;
+      });
       setSelectedCategory({
         category: summary.category,
         color: CHART_COLORS[index % CHART_COLORS.length],
@@ -879,7 +1100,7 @@ function CategoryList({
         totalAmount: summary.amount,
       });
     },
-    [transactions]
+    [transactions, viewMode]
   );
 
   if (summaries.length === 0) {
@@ -923,8 +1144,38 @@ function CategoryList({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium text-foreground truncate">{summary.category.name}</p>
-                  <CurrencyDisplay amount={summary.amount} size="sm" variant="default" className="font-semibold" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-medium text-foreground truncate">{summary.category.name}</p>
+                    {/* Transaction Type Badge - Only show when viewMode is 'all' */}
+                    {viewMode === 'all' && (
+                      <div
+                        className={cn(
+                          'flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium shrink-0',
+                          summary.category.type === 'expense'
+                            ? 'bg-rose-500/10 text-rose-500'
+                            : 'bg-emerald-500/10 text-emerald-500'
+                        )}
+                      >
+                        {summary.category.type === 'expense' ? (
+                          <>
+                            <TrendingDown className="size-2.5" />
+                            <span>รายจ่าย</span>
+                          </>
+                        ) : (
+                          <>
+                            <TrendingUp className="size-2.5" />
+                            <span>รายรับ</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <CurrencyDisplay
+                    amount={summary.amount}
+                    size="sm"
+                    variant={viewMode === 'expense' ? 'expense' : viewMode === 'income' ? 'income' : summary.category.type === 'expense' ? 'expense' : 'income'}
+                    className="font-semibold shrink-0"
+                  />
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
                   <span className="text-xs text-muted-foreground">{summary.transactionCount} รายการ</span>
@@ -955,6 +1206,7 @@ function CategoryList({
           transactions={selectedCategory.transactions}
           color={selectedCategory.color}
           totalAmount={selectedCategory.totalAmount}
+          viewMode={viewMode}
         />
       )}
     </>
@@ -1000,6 +1252,7 @@ export function AnalyticsTab() {
   const [selectedMonths, setSelectedMonths] = useState<MonthSelection[]>([
     { month: currentMonth, year: currentYear, key: getMonthKey(currentMonth, currentYear) }
   ]);
+  const [chartViewMode, setChartViewMode] = useState<ChartViewMode>('expense');
 
   // Available years
   const availableYears = useMemo(() => {
@@ -1144,16 +1397,70 @@ export function AnalyticsTab() {
     [filteredTransactions]
   );
 
+  const incomeSummaries = useMemo(
+    () => computeCategorySummaries(filteredTransactions, 'income'),
+    [filteredTransactions]
+  );
+
+  const allSummaries = useMemo(
+    () => computeCategorySummaries(filteredTransactions, 'all'),
+    [filteredTransactions]
+  );
+
   const totalExpense = useMemo(
     () => expenseSummaries.reduce((sum, s) => sum + s.amount, 0),
     [expenseSummaries]
   );
 
+  const totalIncome = useMemo(
+    () => incomeSummaries.reduce((sum, s) => sum + s.amount, 0),
+    [incomeSummaries]
+  );
+
+  const totalAll = useMemo(
+    () => allSummaries.reduce((sum, s) => sum + s.amount, 0),
+    [allSummaries]
+  );
+
+  // Get current summaries based on chart view mode
+  const currentSummaries = useMemo(() => {
+    switch (chartViewMode) {
+      case 'expense':
+        return expenseSummaries;
+      case 'income':
+        return incomeSummaries;
+      case 'all':
+        return allSummaries;
+    }
+  }, [chartViewMode, expenseSummaries, incomeSummaries, allSummaries]);
+
+  const currentTotal = useMemo(() => {
+    switch (chartViewMode) {
+      case 'expense':
+        return totalExpense;
+      case 'income':
+        return totalIncome;
+      case 'all':
+        return totalAll;
+    }
+  }, [chartViewMode, totalExpense, totalIncome, totalAll]);
+
+  const currentCenterLabel = useMemo(() => {
+    switch (chartViewMode) {
+      case 'expense':
+        return 'รวมรายจ่าย';
+      case 'income':
+        return 'รวมรายรับ';
+      case 'all':
+        return 'รวมทั้งหมด';
+    }
+  }, [chartViewMode]);
+
   const chartKey = useMemo(() => {
     const walletKey = selectedWalletId || 'all';
-    if (filterMode === 'yearly') return `year-${selectedYear}-wallet-${walletKey}`;
-    return selectedMonths.map((s) => s.key).join('-') + `-wallet-${walletKey}`;
-  }, [filterMode, selectedYear, selectedMonths, selectedWalletId]);
+    if (filterMode === 'yearly') return `year-${selectedYear}-wallet-${walletKey}-view-${chartViewMode}`;
+    return selectedMonths.map((s) => s.key).join('-') + `-wallet-${walletKey}-view-${chartViewMode}`;
+  }, [filterMode, selectedYear, selectedMonths, selectedWalletId, chartViewMode]);
 
   // Get selected wallet name
   const selectedWalletName = useMemo(() => {
@@ -1196,7 +1503,7 @@ export function AnalyticsTab() {
 
       <PageContainer className="pt-4 space-y-3">
         {/* Filter Section - Expandable */}
-        <div className="bg-linear-to-br from-card to-muted/20 rounded-2xl border border-border/50 overflow-hidden">
+        <div className="bg-linear-to-br from-card to-muted/20 rounded-xl border border-border/50 overflow-hidden">
           {/* Filter Header */}
           <button
             onClick={() => setIsFilterExpanded(!isFilterExpanded)}
@@ -1299,27 +1606,67 @@ export function AnalyticsTab() {
         </div>
 
         {/* Donut Chart Section */}
-        <div className="bg-linear-to-br from-card via-card to-muted/20 rounded-3xl px-2 py-2 border border-border/50 shadow-lg shadow-black/5">
-          <div className="text-center">
-            <h2 className="font-semibold text-foreground">รายจ่ายตามหมวดหมู่</h2>
-          </div>
-
-          <DonutChart
-            summaries={expenseSummaries}
-            totalAmount={totalExpense}
-            centerLabel="รวมรายจ่าย"
-            chartKey={chartKey}
+        <div className="bg-linear-to-br from-card via-card to-muted/20 rounded-xl px-4 pt-2 border border-border/50 shadow-lg shadow-black/5 space-y-4">
+          {/* Chart View Mode Selector */}
+          <ChartViewModeSelector
+            mode={chartViewMode}
+            onModeChange={setChartViewMode}
+            expenseTotal={totalExpense}
+            incomeTotal={totalIncome}
+            allTotal={totalAll}
           />
 
+          <DonutChart
+            summaries={currentSummaries}
+            totalAmount={currentTotal}
+            centerLabel={currentCenterLabel}
+            chartKey={chartKey}
+            viewMode={chartViewMode}
+          />
         </div>
 
         {/* Category List */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-foreground">รายละเอียดหมวดหมู่</h3>
-            <span className="text-xs text-muted-foreground">{expenseSummaries.length} หมวดหมู่</span>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-foreground">รายละเอียดหมวดหมู่</h3>
+              {/* View Mode Badge */}
+              <div
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
+                  'transition-all duration-300 animate-in fade-in-0 slide-in-from-left-2',
+                  chartViewMode === 'expense' && 'bg-rose-500/10 text-rose-500',
+                  chartViewMode === 'income' && 'bg-emerald-500/10 text-emerald-500',
+                  chartViewMode === 'all' && 'bg-blue-500/10 text-blue-500'
+                )}
+              >
+                {chartViewMode === 'expense' && (
+                  <>
+                    <TrendingDown className="size-3" />
+                    <span>รายจ่าย</span>
+                  </>
+                )}
+                {chartViewMode === 'income' && (
+                  <>
+                    <TrendingUp className="size-3" />
+                    <span>รายรับ</span>
+                  </>
+                )}
+                {chartViewMode === 'all' && (
+                  <>
+                    <Layers className="size-3" />
+                    <span>ทั้งหมด</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <span className="text-xs text-muted-foreground">{currentSummaries.length} หมวดหมู่</span>
           </div>
-          <CategoryList summaries={expenseSummaries} transactions={filteredTransactions} />
+          <CategoryList
+            summaries={currentSummaries}
+            transactions={filteredTransactions}
+            viewMode={chartViewMode}
+          />
         </div>
       </PageContainer>
     </>
