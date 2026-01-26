@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { Header, PageContainer } from '@/components/layout';
 import { Card, CardContent } from '@/components/ui/card';
-import { User, Palette, ChevronRight, Check, Database } from 'lucide-react';
+import { User, Palette, ChevronRight, Check, Database, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useThemeStore, type ThemeType } from '@/lib/stores/theme-store';
-import { StorageInfoCard } from './MoreTabComponent';
+import { StorageInfoCard, ExportDataCard } from './MoreTabComponent';
 
 interface SettingsMenuItemProps {
   icon: React.ReactNode;
@@ -139,6 +139,7 @@ function ThemeSelector() {
 export function MoreTab() {
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [showStorageInfo, setShowStorageInfo] = useState(false);
+  const [showExportData, setShowExportData] = useState(false);
 
   const handleAccountClick = () => {
     // TODO: Navigate to account settings
@@ -153,11 +154,15 @@ export function MoreTab() {
     setShowStorageInfo(!showStorageInfo);
   };
 
+  const handleExportClick = () => {
+    setShowExportData(!showExportData);
+  };
+
   return (
     <>
       <Header title="การตั้งค่า" />
 
-      <PageContainer className="pt-6">
+      <PageContainer className="my-4">
         <div className="flex flex-col gap-3">
           <SettingsMenuItem
             icon={<User className="size-5" />}
@@ -178,6 +183,19 @@ export function MoreTab() {
                 <ThemeSelector />
               </CardContent>
             </Card>
+          )}
+
+          <SettingsMenuItem
+            icon={<FileSpreadsheet className="size-5" />}
+            title="ส่งออกข้อมูล Excel"
+            onClick={handleExportClick}
+          />
+
+          {/* Export Data Card */}
+          {showExportData && (
+            <div className="animate-slide-up">
+              <ExportDataCard />
+            </div>
           )}
 
           <SettingsMenuItem

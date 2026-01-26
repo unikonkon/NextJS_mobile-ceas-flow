@@ -258,7 +258,7 @@ function InfoRow({
         <span className="text-xs text-muted-foreground">{label}</span>
         <span className="truncate font-medium text-foreground">{value}</span>
         {subValue && (
-          <span className="truncate text-xs text-muted-foreground">{subValue}</span>
+          <span className="truncate text-[10px] text-muted-foreground">{subValue}</span>
         )}
       </div>
     </div>
@@ -385,10 +385,10 @@ export function StorageInfoCard() {
               device.platform === 'ios'
                 ? 'iOS'
                 : device.platform === 'android'
-                ? 'Android'
-                : device.platform === 'desktop'
-                ? 'Desktop'
-                : 'Unknown'
+                  ? 'Android'
+                  : device.platform === 'desktop'
+                    ? 'Desktop'
+                    : 'Unknown'
             }
             subValue={
               device.deviceModel +
@@ -409,7 +409,7 @@ export function StorageInfoCard() {
                 icon={<Cpu className="size-4" />}
                 label="โหมดการทำงาน"
                 value="PWA (Standalone)"
-                subValue="ติดตั้งเป็นแอป"
+                subValue="ติดตั้งเป็นแอป ข้อมูลจะหายเมื่อลบแอปออก"
               />
             </>
           )}
@@ -456,7 +456,7 @@ export function StorageInfoCard() {
                     {indexedDBLimits.practical}
                   </span>
                 </div>
-                <p className="mt-3 rounded-lg bg-muted/50 p-2.5 text-xs leading-relaxed text-muted-foreground">
+                <p className="text-[9px] leading-relaxed text-muted-foreground">
                   {indexedDBLimits.notes}
                 </p>
               </div>
@@ -465,7 +465,7 @@ export function StorageInfoCard() {
             {/* Usage Details (if available) */}
             {storage.usageDetails && (
               <div className="rounded-xl border border-border/50 bg-muted/20 p-4">
-                <h4 className="mb-3 font-medium text-foreground">รายละเอียดการใช้งาน</h4>
+                <h4 className="mb-2 font-medium text-foreground">รายละเอียดการใช้งาน</h4>
                 <div className="space-y-2 text-sm">
                   {storage.usageDetails.indexedDB !== undefined && (
                     <div className="flex justify-between">
