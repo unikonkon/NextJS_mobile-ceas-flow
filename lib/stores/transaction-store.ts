@@ -7,6 +7,7 @@ import {
 } from '@/types';
 import { db, toStoredTransaction, fromStoredTransaction } from './db';
 import { useCategoryStore } from './category-store';
+import { useAnalysisStore } from './analysis-store';
 import { mockTransactions } from '@/lib/mock/data';
 
 // ============================================
@@ -361,6 +362,21 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
           updatedAt: newTransaction.updatedAt,
         })
       );
+
+      // Update Analysis for duplicate detection (V4)
+      const analysisStore = useAnalysisStore.getState();
+      await analysisStore.updateAnalysisOnNewTransaction({
+        id: newTransaction.id,
+        walletId: newTransaction.walletId,
+        categoryId: newTransaction.categoryId,
+        type: newTransaction.type,
+        amount: newTransaction.amount,
+        currency: newTransaction.currency,
+        date: newTransaction.date,
+        note: newTransaction.note,
+        createdAt: newTransaction.createdAt,
+        updatedAt: newTransaction.updatedAt,
+      });
     } catch (error) {
       console.error('Failed to persist transaction:', error);
     }

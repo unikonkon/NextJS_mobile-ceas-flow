@@ -5,7 +5,8 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { Header, PageContainer } from '@/components/layout';
 import { CurrencyDisplay } from '@/components/common';
-import { useTransactionStore, useCategoryStore, useWalletStore } from '@/lib/stores';
+import { useTransactionStore, useCategoryStore, useWalletStore, useAnalysisStore } from '@/lib/stores';
+import { ReusedTransactionSheet } from './AnalyticsTabComponent/ReusedTransactionFilters';
 import { CategorySummary, TransactionWithCategory, Category, Wallet } from '@/types';
 import {
   ChevronLeft,
@@ -22,6 +23,7 @@ import {
   TrendingDown,
   TrendingUp,
   Layers,
+  Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -1224,9 +1226,18 @@ export function AnalyticsTab() {
   const setSelectedWalletId = useTransactionStore((s) => s.setSelectedWalletId);
   const loadCategories = useCategoryStore((s) => s.loadCategories);
   const categoryInitialized = useCategoryStore((s) => s.isInitialized);
+  const getAllCategories = useCategoryStore((s) => s.getAllCategories);
   const wallets = useWalletStore((s) => s.wallets);
   const loadWallets = useWalletStore((s) => s.loadWallets);
   const walletInitialized = useWalletStore((s) => s.isInitialized);
+
+  // Analysis Store (V4)
+  const analysisRecords = useAnalysisStore((s) => s.analysisRecords);
+  const loadAnalysis = useAnalysisStore((s) => s.loadAnalysis);
+  const analysisInitialized = useAnalysisStore((s) => s.isInitialized);
+
+  // Reused Transactions Sheet state
+  const [isReusedSheetOpen, setIsReusedSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!categoryInitialized) loadCategories();
@@ -1239,6 +1250,11 @@ export function AnalyticsTab() {
   useEffect(() => {
     if (!isInitialized && categoryInitialized) loadTransactions();
   }, [isInitialized, categoryInitialized, loadTransactions]);
+
+  // Load analysis data
+  useEffect(() => {
+    if (!analysisInitialized) loadAnalysis();
+  }, [analysisInitialized, loadAnalysis]);
 
   // Current date
   const now = new Date();
@@ -1660,7 +1676,20 @@ export function AnalyticsTab() {
                 )}
               </div>
             </div>
-            <span className="text-xs text-muted-foreground">{currentSummaries.length} หมวดหมู่</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsReusedSheetOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+              >
+                <Repeat className="size-3" />
+                <span>รายการใช้ซ้ำ</span>
+                {analysisRecords.filter((a) => a.count > 1).length > 0 && (
+                  <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {analysisRecords.filter((a) => a.count > 1).length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
           <CategoryList
             summaries={currentSummaries}
@@ -1668,6 +1697,19 @@ export function AnalyticsTab() {
             viewMode={chartViewMode}
           />
         </div>
+
+        {/* Reused Transactions Sheet */}
+        <ReusedTransactionSheet
+          isOpen={isReusedSheetOpen}
+          onClose={() => setIsReusedSheetOpen(false)}
+          analysisRecords={analysisRecords}
+          categories={getAllCategories()}
+          wallets={wallets}
+          // Filter data from main (read-only)
+          selectedWalletId={selectedWalletId}
+          periodLabel={periodLabel}
+          selectedWalletName={selectedWalletName}
+        />
       </PageContainer>
     </>
   );

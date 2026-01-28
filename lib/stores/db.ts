@@ -42,12 +42,32 @@ export interface StoredWallet {
 }
 
 // ============================================
+// Analysis Types (NEW in V4)
+// ============================================
+export type MatchType = 'basic' | 'full';
+
+export interface StoredAnalysis {
+  id: string;
+  walletId: string;
+  type: 'income' | 'expense';
+  categoryId: string;
+  amount: number;
+  note?: string;
+  matchType: MatchType;
+  count: number;
+  lastTransactionId: string;
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+}
+
+// ============================================
 // Dexie Database
 // ============================================
 export class AppDatabase extends Dexie {
   transactions!: EntityTable<StoredTransaction, 'id'>;
   categories!: EntityTable<StoredCategory, 'id'>;
   wallets!: EntityTable<StoredWallet, 'id'>;
+  analysis!: EntityTable<StoredAnalysis, 'id'>;
 
   constructor() {
     super('CeasFlowDB');
@@ -70,6 +90,14 @@ export class AppDatabase extends Dexie {
       transactions: 'id, walletId, categoryId, type, date, createdAt',
       categories: 'id, type, order',
       wallets: 'id, type',
+    });
+
+    // Version 4: Add analysis table for duplicate detection
+    this.version(4).stores({
+      transactions: 'id, walletId, categoryId, type, date, createdAt',
+      categories: 'id, type, order',
+      wallets: 'id, type',
+      analysis: 'id, walletId, type, categoryId, amount, note, matchType, count, lastTransactionId, updatedAt',
     });
   }
 }
@@ -130,5 +158,38 @@ export function fromStoredWallet(s: StoredWallet): Wallet {
   return {
     ...s,
     createdAt: new Date(s.createdAt),
+  };
+}
+
+// ============================================
+// Analysis Converters (NEW in V4)
+// ============================================
+export interface Analysis {
+  id: string;
+  walletId: string;
+  type: 'income' | 'expense';
+  categoryId: string;
+  amount: number;
+  note?: string;
+  matchType: MatchType;
+  count: number;
+  lastTransactionId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export function toStoredAnalysis(a: Analysis): StoredAnalysis {
+  return {
+    ...a,
+    createdAt: a.createdAt.toISOString(),
+    updatedAt: a.updatedAt.toISOString(),
+  };
+}
+
+export function fromStoredAnalysis(s: StoredAnalysis): Analysis {
+  return {
+    ...s,
+    createdAt: new Date(s.createdAt),
+    updatedAt: new Date(s.updatedAt),
   };
 }

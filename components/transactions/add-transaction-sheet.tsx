@@ -15,10 +15,12 @@ import {
   TypeSelector,
   CategoryScroll,
   CalculatorKeypad,
+  FrequentTransactions,
 } from './ui-transactions';
 import {
   Wallet,
   FileText,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface AddTransactionSheetProps {
@@ -155,7 +157,28 @@ export function AddTransactionSheet({
     }
   };
 
-  const canSubmit = !!(selectedCategory && parseFloat(calculator.displayValue) > 0);
+  // ต้องมี: category, amount > 0, และ wallet
+  const hasWallet = !!(localWalletId && selectedWallet);
+  const canSubmit = !!(selectedCategory && parseFloat(calculator.displayValue) > 0 && hasWallet);
+
+  // Handle frequent transaction selection
+  const handleFrequentSelect = (input: {
+    type: TransactionType;
+    amount: number;
+    categoryId: string;
+    walletId?: string;
+    date?: Date;
+    note?: string;
+  }) => {
+    // ต้องมี wallet ถึงจะบันทึกได้
+    if (!hasWallet) {
+      setWalletPickerOpen(true);
+      return;
+    }
+    onSubmit?.(input);
+    resetForm();
+    setOpen(false);
+  };
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -234,11 +257,14 @@ export function AddTransactionSheet({
                       onClick={() => setWalletPickerOpen(true)}
                       className={cn(
                         "flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all w-full justify-center shadow-sm",
-                        "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground",
-                        "active:scale-95"
+                        "active:scale-95",
+                        hasWallet
+                          ? "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+                          : "bg-destructive/10 hover:bg-destructive/20 text-destructive ring-1 ring-destructive/30"
                       )}
                     >
-                      {selectedWallet?.icon || <Wallet className="size-3" />}
+                      {!hasWallet && <AlertTriangle className="size-3" />}
+                      {hasWallet && (selectedWallet?.icon || <Wallet className="size-3" />)}
                       <span className="pl-1 truncate max-w-[110px]">
                         {selectedWallet?.name || 'เลือกบัญชี'}
                       </span>
@@ -297,6 +323,14 @@ export function AddTransactionSheet({
               </div>
             </div>
           </div>
+
+          {/* Frequent Transactions - รายการใช้ซ้ำ */}
+          <FrequentTransactions
+            walletId={localWalletId}
+            transactionType={transactionType}
+            onSelect={handleFrequentSelect}
+            maxItems={4}
+          />
 
           {/* Calculator Keypad */}
           {!isNoteInputFocused && (

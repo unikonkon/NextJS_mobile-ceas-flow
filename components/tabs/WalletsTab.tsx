@@ -18,7 +18,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Header, PageContainer } from '@/components/layout';
-import { useWalletStore, useTransactionStore } from '@/lib/stores';
+import { useWalletStore, useTransactionStore, useAnalysisStore } from '@/lib/stores';
 import { formatCurrency, formatDate, formatRelativeDate } from '@/lib/utils/format';
 import { Wallet, TransactionWithCategory, WalletType } from '@/types';
 import {
@@ -940,6 +940,8 @@ export function WalletsTab() {
   const loadTransactions = useTransactionStore((s) => s.loadTransactions);
   const transactionInitialized = useTransactionStore((s) => s.isInitialized);
 
+  const deleteAnalysisByWalletId = useAnalysisStore((s) => s.deleteAnalysisByWalletId);
+
   // Local State
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
@@ -1006,6 +1008,9 @@ export function WalletsTab() {
     // Bulk delete all transactions for this wallet from DB
     await deleteTransactionsByWalletId(walletToDelete.id);
 
+    // Delete all analysis records for this wallet
+    await deleteAnalysisByWalletId(walletToDelete.id);
+
     // Delete the wallet from DB
     await deleteWallet(walletToDelete.id);
 
@@ -1028,6 +1033,9 @@ export function WalletsTab() {
 
     // Bulk delete all transactions for this wallet from DB
     await deleteTransactionsByWalletId(selectedWallet.id);
+
+    // Delete all analysis records for this wallet
+    await deleteAnalysisByWalletId(selectedWallet.id);
 
     // Delete the wallet from DB
     await deleteWallet(selectedWallet.id);
